@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tablero de cumplimiento</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <h1>Tablero de cumplimiento</h1>
+      <p>Meta vs. real por sección, mes a mes</p>
+    </div>
+    <nav class="tabs" aria-label="Secciones">
+      <button class="tab active" data-view="captura">Ingresar datos</button>
+      <button class="tab" data-view="informe">Ver informe</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ SECCIÓN 1: INGRESAR DATOS ============ -->
+    <section id="captura" class="view active">
+
+      <div class="card highlight">
+        <div class="row between">
+          <div>
+            <h2>Cargar desde tu Excel</h2>
+            <p class="hint" style="margin:0">Sube el archivo y se leen todas las tablas que tengan los meses (ENE a DIC) y una columna <b>Meta</b>. El real se toma de la columna que está justo a la izquierda de la meta. Cada tabla queda como una sección.</p>
+          </div>
+          <label class="btn primary file-btn">Subir Excel
+            <input id="fileExcel" type="file" accept=".xlsx,.xls,.xlsm">
+          </label>
+        </div>
+        <p id="errExcel" class="error"></p>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h2>Indicador</h2>
+          <div class="row gap">
+            <select id="selIndicador" aria-label="Indicador seleccionado"></select>
+            <button id="btnNuevo" class="btn">+ Nuevo indicador</button>
+            <button id="btnEliminar" class="btn danger">Eliminar</button>
+          </div>
+        </div>
+
+        <div class="grid-fields">
+          <label>Nombre del indicador
+            <input id="nombre" type="text" placeholder="Venta de combustible">
+          </label>
+          <label>Año
+            <input id="anio" type="number" min="2000" max="2100">
+          </label>
+          <label>Unidad
+            <input id="unidad" type="text" placeholder="galones">
+          </label>
+          <label>Desde aquí es "En riesgo" (%)
+            <input id="lo" type="number" min="1" max="99" step="1">
+          </label>
+          <label>Desde aquí es "En meta" (%)
+            <input id="hi" type="number" min="1" max="100" step="1">
+          </label>
+        </div>
+        <p id="errRangos" class="error"></p>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h2>Meta y real por mes</h2>
+          <span class="hint">Los cambios se guardan solos en este navegador.</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Mes</th><th>Meta</th><th>Real</th><th>Cumplimiento</th></tr>
+            </thead>
+            <tbody id="tablaMeses"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Pegar desde Excel</h2>
+        <p class="hint">Copia en Excel las columnas <b>Mes, Meta y Real</b> y pégalas aquí. Si la primera columna trae el nombre del mes, cada fila va a su mes. Si no, se llenan en orden desde enero.</p>
+        <textarea id="pegar" rows="5" placeholder="Enero	1.000	850&#10;Febrero	1.000	910"></textarea>
+        <p id="errPegar" class="error"></p>
+        <div class="row gap">
+          <button id="btnAplicar" class="btn primary">Aplicar datos</button>
+          <button id="btnLimpiar" class="btn">Borrar meta y real</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Respaldo</h2>
+        <p class="hint">Los datos viven solo en este navegador. Copia o descarga un respaldo para pasarlos a otro computador o para no perderlos.</p>
+        <div class="row gap">
+          <button id="btnCopiar" class="btn">Copiar respaldo</button>
+          <button id="btnExportar" class="btn">Descargar respaldo</button>
+          <label class="btn file-btn">Cargar archivo de respaldo
+            <input id="fileImportar" type="file" accept=".json,.txt,application/json,text/plain">
+          </label>
+        </div>
+        <textarea id="txtRespaldo" rows="3" style="margin-top:10px" placeholder="O pega aquí el texto de un respaldo copiado"></textarea>
+        <button id="btnCargarTexto" class="btn">Cargar respaldo pegado</button>
+        <p id="errImportar" class="error"></p>
+      </div>
+
+      <div class="row end">
+        <button class="btn primary" data-goto="informe">Ver informe →</button>
+      </div>
+    </section>
+
+    <!-- ============ SECCIÓN 2: INFORME ============ -->
+    <section id="informe" class="view">
+
+      <div id="chips" class="chips no-print"></div>
+
+      <div id="vistaResumen">
+        <div class="card">
+          <h2 class="report-title">Resumen general</h2>
+          <p id="resSub" class="muted"></p>
+          <div class="kpis kpis-3" style="margin-top:14px">
+            <div class="kpi"><span>Secciones en meta</span><strong id="rEnMeta" class="txt-green">0</strong></div>
+            <div class="kpi"><span>Secciones en riesgo</span><strong id="rRiesgo" class="txt-amber">0</strong></div>
+            <div class="kpi"><span>Secciones bajo la meta</span><strong id="rBajo" class="txt-red">0</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Cumplimiento por sección</h2>
+          <p class="hint">Toca una sección para ver su detalle mes a mes.</p>
+          <div id="resGrid" class="months"></div>
+        </div>
+      </div>
+
+      <div id="vistaDetalle">
+      <div class="card">
+        <div class="row between">
+          <div>
+            <h2 id="infTitulo" class="report-title"></h2>
+            <p id="infSub" class="muted"></p>
+          </div>
+          <button id="btnImprimir" class="btn no-print">Imprimir / PDF</button>
+        </div>
+
+        <div class="resumen">
+          <div class="gauge-big">
+            <div id="gaugeTotal"></div>
+            <p class="center muted">Cumplimiento acumulado</p>
+          </div>
+          <div class="kpis">
+            <div class="kpi"><span>Meta a la fecha</span><strong id="kMeta">—</strong></div>
+            <div class="kpi"><span>Real a la fecha</span><strong id="kReal">—</strong></div>
+            <div class="kpi"><span>Diferencia</span><strong id="kDif">—</strong></div>
+            <div class="kpi"><span>Meses en meta</span><strong id="kMeses">—</strong></div>
+            <div class="kpi kpi-wide"><span>Avance vs. meta del año</span><strong id="kAnual">—</strong><small id="kMetaAnual" class="muted"></small></div>
+          </div>
+        </div>
+        <p class="hint center">"A la fecha" suma solo los meses que ya tienen real. El avance compara el real contra la meta de los 12 meses.</p>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h2>Meta vs. real por mes</h2>
+          <div class="legend small">
+            <span><i class="dot" style="background:#c9ced6"></i>Meta</span>
+            <span><i class="dot" style="background:linear-gradient(90deg,#e24b4a 33%,#ef9f27 33% 66%,#639922 66%)"></i>Real (color según estado)</span>
+          </div>
+        </div>
+        <div id="barras"></div>
+      </div>
+
+      <div class="card">
+        <h2>Cumplimiento por mes</h2>
+        <div id="meses" class="months"></div>
+        <div class="legend">
+          <span><i class="dot" style="background:#e24b4a"></i><span id="lg1"></span></span>
+          <span><i class="dot" style="background:#ef9f27"></i><span id="lg2"></span></span>
+          <span><i class="dot" style="background:#639922"></i><span id="lg3"></span></span>
+        </div>
+      </div>
+
+      </div>
+
+      <div class="row end no-print">
+        <button class="btn" data-goto="captura">← Editar datos</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="datos.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
