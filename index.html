@@ -10,13 +10,21 @@
 
   <header class="topbar">
     <div class="brand">
-      <h1>Tablero de cumplimiento</h1>
-      <p>Meta vs. real por sección, mes a mes</p>
+      <span id="topLogo" class="top-logo"></span>
+      <div>
+        <h1>Tablero de cumplimiento</h1>
+        <p><span id="topEmpresa"></span>Meta vs. real por sección, mes a mes</p>
+      </div>
+    </div>
+    <div class="top-right">
+    <div class="nube-box">
+      <span id="nubeEstado" class="nube-estado"></span>
     </div>
     <nav class="tabs" aria-label="Secciones">
       <button class="tab active" data-view="captura">Ingresar datos</button>
       <button class="tab" data-view="informe">Ver informe</button>
     </nav>
+    </div>
   </header>
 
   <main>
@@ -34,6 +42,33 @@
           </label>
         </div>
         <p id="errExcel" class="error"></p>
+      </div>
+
+      <div class="card">
+        <h2>Datos del informe</h2>
+        <p class="hint">Aparecen en el encabezado del informe y al imprimir.</p>
+        <div class="grid-fields">
+          <label>Nombre de la empresa
+            <input id="cfgEmpresa" type="text" placeholder="Nombre de tu empresa">
+          </label>
+          <label>Fecha de corte
+            <input id="cfgCorte" type="text">
+          </label>
+          <label>Color principal
+            <input id="cfgColor" type="color" class="color-input">
+          </label>
+          <div class="logo-field">
+            <span class="lbl">Logo</span>
+            <div class="row gap">
+              <span id="cfgPrev" class="logo-prev"></span>
+              <label class="btn file-btn">Subir logo
+                <input id="cfgLogo" type="file" accept="image/*">
+              </label>
+              <button id="cfgQuitarLogo" class="btn">Quitar</button>
+            </div>
+          </div>
+        </div>
+        <p id="errCfg" class="error"></p>
       </div>
 
       <div class="card">
@@ -69,12 +104,12 @@
       <div class="card">
         <div class="row between">
           <h2>Meta y real por mes</h2>
-          <span class="hint">Los cambios se guardan solos en este navegador.</span>
+          <span id="hintGuardado" class="hint">Los cambios se guardan solos en este navegador.</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Mes</th><th>Meta</th><th>Real</th><th>Cumplimiento</th></tr>
+              <tr><th>Mes</th><th>Meta</th><th>Real</th><th id="thAnt">Real año anterior</th><th>Cumplimiento</th></tr>
             </thead>
             <tbody id="tablaMeses"></tbody>
           </table>
@@ -115,6 +150,14 @@
     <!-- ============ SECCIÓN 2: INFORME ============ -->
     <section id="informe" class="view">
 
+      <div class="report-head">
+        <span id="repLogo" class="rep-logo"></span>
+        <div>
+          <p id="repEmpresa" class="rep-empresa"></p>
+          <p id="repCorte" class="rep-corte"></p>
+        </div>
+      </div>
+
       <div id="chips" class="chips no-print"></div>
 
       <div id="vistaResumen">
@@ -127,6 +170,29 @@
             <div class="kpi"><span>Secciones bajo la meta</span><strong id="rBajo" class="txt-red">0</strong></div>
           </div>
         </div>
+        <div class="card">
+          <div class="row between">
+            <h2>Ranking de cumplimiento a la fecha</h2>
+            <span class="hint" style="margin:0">La línea negra marca la meta (100 %)</span>
+          </div>
+          <div class="rank">
+            <div id="rankHead" class="rank-row rank-head"></div>
+            <div id="ranking"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row between">
+            <h2>Semáforo del año</h2>
+            <div class="legend small">
+              <span><i class="dot" style="background:#e24b4a"></i>Bajo la meta</span>
+              <span><i class="dot" style="background:#ef9f27"></i>En riesgo</span>
+              <span><i class="dot" style="background:#639922"></i>En meta</span>
+            </div>
+          </div>
+          <div class="table-wrap"><table id="semaforo" class="heat"></table></div>
+        </div>
+
         <div class="card">
           <h2>Cumplimiento por sección</h2>
           <p class="hint">Toca una sección para ver su detalle mes a mes.</p>
@@ -154,7 +220,8 @@
             <div class="kpi"><span>Real a la fecha</span><strong id="kReal">—</strong></div>
             <div class="kpi"><span>Diferencia</span><strong id="kDif">—</strong></div>
             <div class="kpi"><span>Meses en meta</span><strong id="kMeses">—</strong></div>
-            <div class="kpi kpi-wide"><span>Avance vs. meta del año</span><strong id="kAnual">—</strong><small id="kMetaAnual" class="muted"></small></div>
+            <div class="kpi"><span>Avance vs. meta del año</span><strong id="kAnual">—</strong><small id="kMetaAnual" class="muted"></small></div>
+            <div class="kpi"><span id="kVarLbl">vs. año anterior</span><strong id="kVar">—</strong><small class="muted">Real de este año contra el anterior</small></div>
           </div>
         </div>
         <p class="hint center">"A la fecha" suma solo los meses que ya tienen real. El avance compara el real contra la meta de los 12 meses.</p>
@@ -166,9 +233,22 @@
           <div class="legend small">
             <span><i class="dot" style="background:#c9ced6"></i>Meta</span>
             <span><i class="dot" style="background:linear-gradient(90deg,#e24b4a 33%,#ef9f27 33% 66%,#639922 66%)"></i>Real (color según estado)</span>
+            <span><i class="ring"></i><span id="lgAnt">Año anterior</span></span>
           </div>
         </div>
         <div id="barras"></div>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h2>Acumulado del año: real vs. meta</h2>
+          <div class="legend small">
+            <span><i class="line" style="border-color:var(--accent)"></i>Real acumulado</span>
+            <span><i class="line dashed"></i>Meta acumulada</span>
+            <span><i class="line dotted"></i><span id="lgAnt2">Año anterior</span></span>
+          </div>
+        </div>
+        <div id="acum"></div>
       </div>
 
       <div class="card">
@@ -192,7 +272,13 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Firebase (si no está configurado, el tablero funciona solo en este navegador) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="datos.js"></script>
   <script src="app.js"></script>
+  <script src="nube.js"></script>
 </body>
 </html>

@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Solo la página del tablero (que entra sola como usuario anónimo)
+    // puede leer y guardar el tablero.
+    match /tableros/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.data.indicadores is list
+                   && request.resource.data.indicadores.size() <= 100;
+    }
+
+    // Todo lo demás queda cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

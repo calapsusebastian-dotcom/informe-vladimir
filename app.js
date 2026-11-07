@@ -87,16 +87,19 @@ function cargar() {
 
 function guardar() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* almacenamiento no disponible */ }
+  if (typeof window.alGuardar === 'function') window.alGuardar(); // sincronización con la nube (nube.js)
 }
 
 let state = cargar();
+const CONFIG_BASE = { empresa: '', logo: '', color: '#1f5fbf', corte: '' };
+state.config = Object.assign({}, CONFIG_BASE, state.config || {});
 const actual = () => state.indicadores.find((i) => i.id === state.actual) || state.indicadores[0];
 
 /* =========================================================
    GRÁFICOS (SVG)
    ========================================================= */
 
-/** Velocímetro: v = cumplimiento (0.85 = 85 %), null = sin dato */
+/** Velocímetro: arco gris que se llena con el color del estado. v = 0.85 → 85 %, null = sin dato */
 function gauge(v, ind) {
   const cx = 100, cy = 86, R = 66;
   const L1 = ind.lo / 100, L2 = ind.hi / 100;
@@ -108,18 +111,22 @@ function gauge(v, ind) {
     return `M${f(x1)} ${f(y1)} A${R} ${R} 0 ${(b - a) * 270 > 180 ? 1 : 0} 1 ${f(x2)} ${f(y2)}`;
   };
 
-  const g = 0.006;
-  const bandas = [[0, L1 - g, COL.red], [L1 + g, L2 - g, COL.amber]];
-  if (L2 < 1) bandas.push([L2 + g, 1, COL.green]);
-
   let s = `<svg viewBox="0 0 200 186" class="gauge" role="img" aria-label="Cumplimiento ${v == null ? 'sin dato' : fmt(v * 100, 1) + ' %'}">`;
-  bandas.forEach(([a, b, c]) => { if (b > a) s += `<path d="${arc(a, b)}" fill="none" stroke="${c}" stroke-width="12"/>`; });
-
-  for (let i = 0; i <= 20; i++) {
-    const [x1, y1] = p(i / 20, R - 15), [x2, y2] = p(i / 20, R - 10);
-    s += `<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" stroke="#c9ced6" stroke-width="1"/>`;
+  s += `<path d="${arc(0, 1)}" fill="none" stroke="#eceef2" stroke-width="13"/>`;
+  if (v != null && v > 0.004) {
+    s += `<path d="${arc(0, Math.min(v, 1))}" fill="none" stroke="${COL[estado(v, ind).c]}" stroke-width="13"/>`;
   }
-
+  // Marcas de los rangos: desde dónde es "En riesgo" y desde dónde "En meta"
+  [[L1, COL.amber], [L2, COL.green]].forEach(([x, c]) => {
+    if (x >= 1) return;
+    const [x1, y1] = p(x, R - 9), [x2, y2] = p(x, R + 9), [lx, ly] = p(x, R + 18);
+    s += `<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" stroke="${c}" stroke-width="2.5"/>`;
+    s += `<text x="${f(lx)}" y="${f(ly + 4)}" text-anchor="middle" font-size="10" fill="#9aa1ab">${fmt(x * 100)}</text>`;
+  });
+  for (let i = 0; i <= 20; i++) {
+    const [x1, y1] = p(i / 20, R - 16), [x2, y2] = p(i / 20, R - 11);
+    s += `<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" stroke="#d5d9e0" stroke-width="1"/>`;
+  }
   const [m1x, m1y] = p(1, R - 9), [m2x, m2y] = p(1, R + 9);
   s += `<line x1="${f(m1x)}" y1="${f(m1y)}" x2="${f(m2x)}" y2="${f(m2y)}" stroke="#1d2129" stroke-width="2.5"/>`;
   const [ax, ay] = p(0, R + 14), [bx, by] = p(1, R + 14);
@@ -127,17 +134,16 @@ function gauge(v, ind) {
   s += `<text x="${f(bx - 8)}" y="${f(by + 8)}" text-anchor="middle" font-size="11" font-weight="600" fill="#1d2129">Meta</text>`;
 
   if (v == null) {
-    s += `<circle cx="${cx}" cy="${cy}" r="6" fill="#c9ced6"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="5" fill="#d5d9e0"/>`;
     s += `<text x="${cx}" y="178" text-anchor="middle" font-size="15" fill="#9aa1ab">Sin dato</text>`;
     return s + '</svg>';
   }
-
-  const a = ang(v), L = 54, W = 4, T = 11;
+  const a = ang(v), L = 50, W = 3, T = 9;
   const tip = [cx + L * Math.cos(a), cy - L * Math.sin(a)];
   const tail = [cx - T * Math.cos(a), cy + T * Math.sin(a)];
   const px = Math.sin(a) * W, py = Math.cos(a) * W;
   s += `<polygon points="${f(tip[0])},${f(tip[1])} ${f(cx + px)},${f(cy + py)} ${f(tail[0])},${f(tail[1])} ${f(cx - px)},${f(cy - py)}" fill="#1d2129"/>`;
-  s += `<circle cx="${cx}" cy="${cy}" r="6" fill="#1d2129"/><circle cx="${cx}" cy="${cy}" r="2.5" fill="#fff"/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="5" fill="#1d2129"/><circle cx="${cx}" cy="${cy}" r="2" fill="#fff"/>`;
   s += `<text x="${cx}" y="180" text-anchor="middle" font-size="26" font-weight="600" fill="#1d2129">${fmt(v * 100, 1)}%</text>`;
   return s + '</svg>';
 }
@@ -152,7 +158,7 @@ function pasoBonito(x) {
 /** Barras agrupadas: meta (gris) y real (color según estado) */
 function barras(datos, ind) {
   const W = 960, H = 320, pl = 84, pr = 16, pt = 16, pb = 40;
-  const vals = datos.flatMap((d) => [d.m, d.r]).filter((v) => v > 0);
+  const vals = datos.flatMap((d) => [d.m, d.r, d.a]).filter((v) => v > 0);
   const max = vals.length ? Math.max(...vals) : 1;
   const paso = pasoBonito(max / 4);
   const tope = Math.ceil(max / paso) * paso;
@@ -177,9 +183,72 @@ function barras(datos, ind) {
     }
     s += `<text x="${x0}" y="${H - pb + 20}" text-anchor="middle" font-size="12" fill="#6b7280">${ABR[i]}</text>`;
   });
+  // Año anterior: línea punteada con puntos
+  const pts = datos.map((d, i) => d.a >= 0 ? [pl + cw * i + cw / 2, H - pb - h(d.a), d.a, i] : null).filter(Boolean);
+  if (pts.length && datos.some((d) => d.a > 0)) {
+    s += `<polyline points="${pts.map((q) => q[0] + ',' + q[1]).join(' ')}" fill="none" stroke="#5f6670" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+    pts.forEach((q) => { s += `<circle cx="${q[0]}" cy="${q[1]}" r="3.5" fill="#fff" stroke="#5f6670" stroke-width="1.5"><title>${MESES[q[3]]} · ${ind.anio - 1}: ${fmt(q[2])}</title></circle>`; });
+  }
   s += `<line x1="${pl}" x2="${W - pr}" y1="${H - pb}" y2="${H - pb}" stroke="#c9ced6"/>`;
   return s + '</svg>';
 }
+
+/** Líneas de acumulado: real vs. meta (y año anterior) */
+function acumulado(datos, ind) {
+  const W = 960, H = 300, pl = 84, pr = 130, pt = 16, pb = 36;
+  let am = 0, ar = 0, aa = 0, ultimo = -1;
+  datos.forEach((d, i) => { if (!isNaN(d.r) && d.m > 0) ultimo = i; });
+  const serie = datos.map((d, i) => {
+    am += d.m > 0 ? d.m : 0;
+    if (i <= ultimo) ar += !isNaN(d.r) ? d.r : 0;
+    aa += d.a >= 0 ? d.a : 0;
+    return { m: am, r: i <= ultimo ? ar : null, a: aa };
+  });
+  const tieneAnt = datos.some((d) => d.a > 0);
+  const max = Math.max(1, ...serie.map((x) => Math.max(x.m, x.r || 0, tieneAnt ? x.a : 0)));
+  const paso = pasoBonito(max / 4), tope = Math.ceil(max / paso) * paso;
+  const alto = H - pt - pb, cw = (W - pl - pr) / 11;
+  const X = (i) => pl + cw * i, Y = (v) => pt + alto * (1 - v / tope);
+  const accent = state.config.color || '#1f5fbf';
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="bars" role="img" aria-label="Acumulado real vs. meta">`;
+  for (let t = 0; t <= tope + paso / 1000; t += paso) {
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${Y(t)}" y2="${Y(t)}" stroke="#eceef2"/>`;
+    s += `<text x="${pl - 8}" y="${Y(t) + 4}" text-anchor="end" font-size="12" fill="#6b7280">${fmt(t)}</text>`;
+  }
+  ABR.forEach((m, i) => { s += `<text x="${X(i)}" y="${H - 10}" text-anchor="middle" font-size="12" fill="#6b7280">${m}</text>`; });
+  const linea = (vals, color, extra) =>
+    `<polyline points="${vals.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ')}" fill="none" stroke="${color}" ${extra}/>`;
+
+  if (tieneAnt) s += linea(serie.map((x) => x.a), '#b4b9c2', 'stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round"');
+  s += linea(serie.map((x) => x.m), '#5f6670', 'stroke-width="2" stroke-dasharray="6 5"');
+
+  if (ultimo >= 0) {
+    const ptsR = serie.slice(0, ultimo + 1).map((x, i) => X(i) + ',' + Y(x.r));
+    s += `<polygon points="${X(0)},${Y(0)} ${ptsR.join(' ')} ${X(ultimo)},${Y(0)}" fill="${accent}" opacity="0.08"/>`;
+    s += linea(serie.map((x) => x.r), accent, 'stroke-width="3" stroke-linejoin="round"');
+    serie.slice(0, ultimo + 1).forEach((x, i) => {
+      s += `<circle cx="${X(i)}" cy="${Y(x.r)}" r="3.5" fill="${accent}"><title>${MESES[i]} · Real acumulado ${fmt(x.r)} · Meta acumulada ${fmt(x.m)}</title></circle>`;
+    });
+    const u = serie[ultimo], brecha = u.r - u.m;
+    s += `<text x="${X(ultimo) + 10}" y="${Y(u.r) + 4}" font-size="12" font-weight="600" fill="${accent}">${fmt(u.r)}</text>`;
+    s += `<text x="${X(ultimo) + 10}" y="${Y(u.r) + 20}" font-size="11" fill="${brecha >= 0 ? '#3b6d11' : '#a32d2d'}">${brecha >= 0 ? '+' : ''}${fmt(brecha)} vs. meta</text>`;
+  }
+  const uM = serie[11];
+  s += `<text x="${X(11) + 8}" y="${Y(uM.m) + 4}" font-size="11" fill="#5f6670">Meta ${fmt(uM.m)}</text>`;
+  return s + '</svg>';
+}
+
+/** Variación contra el año anterior en los mismos meses que tienen real */
+function variacion(datos) {
+  let r = 0, a = 0, n = 0;
+  datos.forEach((d) => { if (d.ok && d.a > 0) { r += d.r; a += d.a; n++; } });
+  return n && a > 0 ? r / a - 1 : null;
+}
+
+const fmtVar = (x) => x == null ? '—' : (x > 0 ? '+' : '') + fmt(x * 100, 1) + '%';
+const clsVar = (x) => x == null ? '' : x >= 0 ? 'txt-green' : 'txt-red';
+
 
 /* =========================================================
    SECCIÓN 1: INGRESAR DATOS
@@ -202,12 +271,14 @@ function renderCaptura() {
   $('#lo').value = ind.lo;
   $('#hi').value = ind.hi;
   $('#errRangos').textContent = '';
+  $('#thAnt').textContent = `Real ${Number(ind.anio) - 1 || 'año anterior'}`;
 
   $('#tablaMeses').innerHTML = MESES.map((m, i) => `
     <tr>
       <td>${m}</td>
       <td><input type="text" inputmode="decimal" data-i="${i}" data-k="meta" value="${esc(ind.meses[i].meta)}" aria-label="Meta ${m}"></td>
       <td><input type="text" inputmode="decimal" data-i="${i}" data-k="real" value="${esc(ind.meses[i].real)}" aria-label="Real ${m}"></td>
+      <td><input type="text" inputmode="decimal" data-i="${i}" data-k="ant" value="${esc(ind.meses[i].ant ?? '')}" aria-label="Año anterior ${m}"></td>
       <td id="c${i}"></td>
     </tr>`).join('');
   actualizarFilas();
@@ -250,6 +321,7 @@ $('#tablaMeses').addEventListener('input', (e) => {
     actual()[id] = e.target.value;
     guardar();
     renderSelect();
+    if (id === 'anio') $('#thAnt').textContent = `Real ${Number(e.target.value) - 1 || 'año anterior'}`;
   });
 });
 
@@ -316,6 +388,7 @@ $('#btnAplicar').addEventListener('click', () => {
 
     ind.meses[idx].meta = String(num(nums[0]));
     ind.meses[idx].real = nums.length > 1 ? String(num(nums[1])) : '';
+    if (nums.length > 2) ind.meses[idx].ant = String(num(nums[2]));
     siguiente = idx + 1;
     aplicadas++;
   });
@@ -330,7 +403,7 @@ $('#btnAplicar').addEventListener('click', () => {
 $('#pegar').addEventListener('input', () => { $('#errPegar').textContent = ''; });
 
 $('#btnLimpiar').addEventListener('click', (ev) => confirmar(ev.currentTarget, '¿Borrar los 12 meses? Clic otra vez', () => {
-  actual().meses = Array.from({ length: 12 }, () => ({ meta: '', real: '' }));
+  actual().meses = Array.from({ length: 12 }, () => ({ meta: '', real: '', ant: '' }));
   guardar();
   renderCaptura();
   toast('Meses borrados');
@@ -364,6 +437,8 @@ function cargarRespaldo(texto) {
     if (!valido(s)) throw new Error();
     if (!s.indicadores.some((i) => i.id === s.actual)) s.actual = s.indicadores[0].id;
     state = s;
+    state.config = Object.assign({}, CONFIG_BASE, state.config || {});
+    aplicarMarca();
     guardar();
     renderCaptura();
     $('#errImportar').textContent = '';
@@ -437,13 +512,21 @@ function leerLibro(wb) {
       const anioM = (hReal.match(/(19|20)\d{2}/) || [])[0] || (typeof row[cReal] === 'number' ? row[cReal] : '');
       const anio = anioM ? Number(anioM) : new Date().getFullYear();
 
-      const meses = Array.from({ length: 12 }, () => ({ meta: '', real: '' }));
+      // Columna del año anterior: la última antes del real cuyo encabezado sea ese año
+      let cAnt = -1;
+      for (let c = cReal - 1; c >= 1; c--) {
+        const hv = txt(row[c]);
+        if (hv === String(anio - 1) || new RegExp('\\b' + (anio - 1) + '\\b').test(hv)) { cAnt = c; break; }
+      }
+
+      const meses = Array.from({ length: 12 }, () => ({ meta: '', real: '', ant: '' }));
       for (let k = r + 1; k <= r + 14 && k < rows.length; k++) {
         const i = mesIdx(rows[k] && rows[k][0]);
         if (i < 0) continue;
         const m = Number(rows[k][cMeta]), v = Number(rows[k][cReal]);
         meses[i].meta = isFinite(m) && m > 1 ? String(+m.toFixed(2)) : '';
         meses[i].real = isFinite(v) && rows[k][cReal] !== null && rows[k][cReal] !== '' ? String(+v.toFixed(2)) : '';
+        if (cAnt >= 0) { const an = Number(rows[k][cAnt]); meses[i].ant = isFinite(an) && rows[k][cAnt] !== null ? String(+an.toFixed(2)) : ''; }
       }
       // Los meses en cero al final del año se toman como pendientes
       let ultimo = -1;
@@ -505,18 +588,19 @@ let vistaInforme = 'resumen';
 function calcular(ind) {
   let tm = 0, tr = 0, enMeta = 0, conDato = 0, metaAnual = 0;
   const datos = ind.meses.map((x) => {
-    const m = num(x.meta), r = num(x.real);
+    const m = num(x.meta), r = num(x.real), a = num(x.ant);
     if (m > 0) metaAnual += m;
     const ok = m > 0 && r >= 0;
     if (ok) {
       tm += m; tr += r; conDato++;
       if (r / m >= ind.hi / 100) enMeta++;
     }
-    return { m, r, ok, v: ok ? r / m : null };
+    return { m, r, a, ok, v: ok ? r / m : null };
   });
   return { datos, tm, tr, enMeta, conDato, metaAnual,
            total: tm > 0 ? tr / tm : null,
-           avance: metaAnual > 0 ? tr / metaAnual : null };
+           avance: metaAnual > 0 ? tr / metaAnual : null,
+           vari: variacion(datos) };
 }
 
 function renderChips() {
@@ -534,7 +618,24 @@ $('#chips').addEventListener('click', (e) => {
   renderInforme();
 });
 
+function corteAuto() {
+  let ultimo = -1, anio = '';
+  state.indicadores.forEach((ind) => ind.meses.forEach((x, i) => {
+    if (x.real !== '' && !isNaN(num(x.real)) && num(x.meta) > 0 && i > ultimo) { ultimo = i; anio = ind.anio; }
+  }));
+  return ultimo >= 0 ? `${MESES[ultimo]} ${anio}` : '';
+}
+
+function renderEncabezado() {
+  const cfg = state.config;
+  const corte = cfg.corte || corteAuto();
+  $('#repLogo').innerHTML = cfg.logo ? `<img src="${cfg.logo}" alt="Logo">` : '';
+  $('#repEmpresa').textContent = cfg.empresa || 'Informe de cumplimiento de metas';
+  $('#repCorte').textContent = [cfg.empresa ? 'Informe de cumplimiento de metas' : '', corte ? `Corte: ${corte}` : ''].filter(Boolean).join(' · ');
+}
+
 function renderInforme() {
+  renderEncabezado();
   renderChips();
   $('#vistaResumen').style.display = vistaInforme === 'resumen' ? '' : 'none';
   $('#vistaDetalle').style.display = vistaInforme === 'detalle' ? '' : 'none';
@@ -545,8 +646,10 @@ function renderResumen() {
   const anios = [...new Set(state.indicadores.map((i) => i.anio))].join(', ');
   $('#resSub').textContent = `Año ${anios} · Cumplimiento acumulado a la fecha de cada sección`;
   let enMeta = 0, enRiesgo = 0, bajo = 0;
-  $('#resGrid').innerHTML = state.indicadores.map((ind) => {
-    const c = calcular(ind);
+  const calc = state.indicadores.map((ind) => ({ ind, c: calcular(ind) }));
+  renderRanking(calc);
+  renderSemaforo(calc);
+  $('#resGrid').innerHTML = calc.map(({ ind, c }) => {
     const e = c.total != null ? estado(c.total, ind) : null;
     if (e) { if (e.c === 'green') enMeta++; else if (e.c === 'amber') enRiesgo++; else bajo++; }
     const pill = e ? `<span class="pill ${e.c}">${e.t}</span>` : '<span class="pill gray">Sin datos</span>';
@@ -562,12 +665,70 @@ function renderResumen() {
         <div class="month-foot" style="border-top:0;padding-top:2px">
           <span>Avance meta anual</span><strong style="color:var(--text)">${c.avance != null ? fmt(c.avance * 100, 1) + '%' : '—'}</strong>
         </div>
+        <div class="month-foot" style="border-top:0;padding-top:0">
+          <span>vs. ${ind.anio - 1} (mismos meses)</span><strong class="${clsVar(c.vari)}">${fmtVar(c.vari)}</strong>
+        </div>
       </button>`;
   }).join('');
   $('#rEnMeta').textContent = enMeta;
   $('#rRiesgo').textContent = enRiesgo;
   $('#rBajo').textContent = bajo;
 }
+
+function renderRanking(calc) {
+  const lista = calc.filter((x) => x.c.total != null).sort((a, b) => b.c.total - a.c.total);
+  const sinDato = calc.filter((x) => x.c.total == null);
+  const escala = Math.max(1, ...lista.map((x) => x.c.total)) * 1.02;
+  const metaPos = (100 / escala).toFixed(2);
+  $('#ranking').innerHTML = lista.map(({ ind, c }, k) => {
+    const e = estado(c.total, ind);
+    return `
+      <button class="rank-row" data-abrir="${ind.id}">
+        <span class="rank-pos">${k + 1}</span>
+        <span class="rank-name">${esc(ind.nombre)}</span>
+        <span class="rank-track">
+          <span class="rank-bar" style="width:${(c.total / escala * 100).toFixed(2)}%;background:${COL[e.c]}"></span>
+          <span class="rank-meta" style="left:${metaPos}%"></span>
+        </span>
+        <span class="rank-val">${fmt(c.total * 100, 1)}%</span>
+        <span class="rank-var ${clsVar(c.vari)}">${fmtVar(c.vari)}</span>
+      </button>`;
+  }).join('') + sinDato.map(({ ind }) => `
+      <button class="rank-row" data-abrir="${ind.id}">
+        <span class="rank-pos">—</span><span class="rank-name">${esc(ind.nombre)}</span>
+        <span class="rank-track"></span><span class="rank-val muted">Sin datos</span><span class="rank-var"></span>
+      </button>`).join('');
+  const anios = [...new Set(state.indicadores.map((i) => i.anio - 1))].join(', ');
+  $('#rankHead').innerHTML = `<span></span><span>Sección</span>
+    <span class="rank-track rank-axis"><span class="rank-meta-lbl" style="left:${metaPos}%">Meta 100%</span></span>
+    <span class="rank-val">A la fecha</span><span class="rank-var">vs. ${anios}</span>`;
+}
+
+function renderSemaforo(calc) {
+  const head = `<thead><tr><th class="h-name">Sección</th>${ABR.map((m) => `<th>${m}</th>`).join('')}<th class="h-tot">A la fecha</th></tr></thead>`;
+  const body = calc.map(({ ind, c }) => {
+    const celdas = c.datos.map((d, i) => {
+      if (!d.ok) return `<td class="h-cell h-none" title="${MESES[i]}: pendiente">·</td>`;
+      const e = estado(d.v, ind);
+      return `<td class="h-cell h-${e.c}" title="${esc(ind.nombre)} · ${MESES[i]}: real ${fmt(d.r)} de meta ${fmt(d.m)}">${fmt(d.v * 100)}%</td>`;
+    }).join('');
+    const et = c.total != null ? estado(c.total, ind) : null;
+    const tot = et ? `<td class="h-cell h-tot h-${et.c}">${fmt(c.total * 100, 1)}%</td>` : '<td class="h-cell h-tot h-none">—</td>';
+    return `<tr><th class="h-name"><button data-abrir="${ind.id}">${esc(ind.nombre)}</button></th>${celdas}${tot}</tr>`;
+  }).join('');
+  $('#semaforo').innerHTML = head + `<tbody>${body}</tbody>`;
+}
+
+['#ranking', '#semaforo'].forEach((sel) => $(sel).addEventListener('click', (e) => {
+  const b = e.target.closest('[data-abrir]');
+  if (!b) return;
+  state.actual = b.dataset.abrir;
+  vistaInforme = 'detalle';
+  guardar();
+  renderInforme();
+  window.scrollTo(0, 0);
+}));
+
 
 $('#resGrid').addEventListener('click', (e) => {
   const b = e.target.closest('[data-abrir]');
@@ -595,7 +756,13 @@ function renderDetalle() {
   $('#kAnual').textContent = c.avance != null ? fmt(c.avance * 100, 1) + '%' : '—';
   $('#kMetaAnual').textContent = c.metaAnual ? 'Meta del año: ' + fmt(c.metaAnual) : '';
 
+  $('#kVar').textContent = fmtVar(c.vari);
+  $('#kVar').className = clsVar(c.vari);
+  $('#kVarLbl').textContent = `vs. ${ind.anio - 1} (mismos meses)`;
+  $('#lgAnt').textContent = `${ind.anio - 1}`;
+  $('#lgAnt2').textContent = `${ind.anio - 1} acumulado`;
   $('#barras').innerHTML = barras(c.datos, ind);
+  $('#acum').innerHTML = acumulado(c.datos, ind);
 
   $('#meses').innerHTML = c.datos.map((d, i) => {
     const e = d.ok ? estado(d.v, ind) : null;
@@ -635,5 +802,57 @@ function mostrar(vista) {
 document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => mostrar(b.dataset.view)));
 document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => mostrar(b.dataset.goto)));
 
+/* =========================================================
+   IDENTIDAD: empresa, logo, color y fecha de corte
+   ========================================================= */
+function aplicarMarca() {
+  const cfg = state.config;
+  document.documentElement.style.setProperty('--accent', cfg.color || '#1f5fbf');
+  $('#topLogo').innerHTML = cfg.logo ? `<img src="${cfg.logo}" alt="">` : '';
+  $('#topEmpresa').textContent = cfg.empresa ? cfg.empresa + ' · ' : '';
+  $('#cfgPrev').innerHTML = cfg.logo ? `<img src="${cfg.logo}" alt="Logo cargado">` : '<span class="muted">Sin logo</span>';
+}
+
+function renderConfig() {
+  const cfg = state.config;
+  $('#cfgEmpresa').value = cfg.empresa;
+  $('#cfgCorte').value = cfg.corte;
+  $('#cfgCorte').placeholder = corteAuto() ? `Automático: ${corteAuto()}` : 'Octubre 2026';
+  $('#cfgColor').value = cfg.color || '#1f5fbf';
+  aplicarMarca();
+}
+
+[['cfgEmpresa', 'empresa'], ['cfgCorte', 'corte'], ['cfgColor', 'color']].forEach(([id, k]) => {
+  $('#' + id).addEventListener('input', (e) => { state.config[k] = e.target.value; guardar(); aplicarMarca(); });
+});
+
+$('#cfgLogo').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  if (!/^image\//.test(f.type)) { $('#errCfg').textContent = 'El logo debe ser una imagen (PNG, JPG o SVG).'; return; }
+  const img = new Image();
+  const url = URL.createObjectURL(f);
+  img.onload = () => {
+    const k = Math.min(1, 360 / img.width, 140 / img.height);
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * k) || 1;
+    cv.height = Math.round(img.height * k) || 1;
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    state.config.logo = cv.toDataURL('image/png');
+    URL.revokeObjectURL(url);
+    $('#errCfg').textContent = '';
+    guardar();
+    aplicarMarca();
+    toast('Logo cargado');
+  };
+  img.onerror = () => { $('#errCfg').textContent = 'No pude abrir esa imagen. Prueba con un PNG o JPG.'; };
+  img.src = url;
+});
+
+$('#cfgQuitarLogo').addEventListener('click', () => { state.config.logo = ''; guardar(); aplicarMarca(); });
+
 /* Inicio */
+renderConfig();
 renderCaptura();
+
