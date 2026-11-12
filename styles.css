@@ -426,3 +426,20 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 .seg button { border: 0; background: transparent; font: inherit; font-size: 12.5px; color: var(--muted); padding: 5px 12px; border-radius: 7px; cursor: pointer; }
 .seg button:hover { color: var(--text); }
 .seg button.active { background: var(--card); color: var(--accent); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+/* Tabla del mes: unidad bajo el nombre, barra de cumplimiento y filas pendientes atenuadas */
+#tablaMes .unit-line { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+#tablaMes td.area { box-shadow: inset 3px 0 0 var(--c, transparent); padding-left: 14px; }
+#tablaMes tbody tr { transition: background .15s; }
+#tablaMes tbody tr:hover { background: #f7f9fc; }
+#tablaMes td.num.real { font-weight: 700; }
+#tablaMes tr.sin td:not(.area) { opacity: .6; }
+#tablaMes tr.sin .link-btn { color: var(--muted); font-weight: 500; }
+#tablaMes .cum-th, #tablaMes .cum-td { min-width: 210px; }
+.cum-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.cum-top strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+.cum-track { position: relative; height: 7px; border-radius: 4px; background: #eceef2; }
+.cum-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; transform-origin: left; animation: grow-x 1.2s cubic-bezier(.22,.8,.3,1) both; }
+.cum-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #1d2129; border-radius: 1px; }
+.esperar .cum-fill { animation-play-state: paused; }
+@media print { .cum-fill { animation: none !important; } #tablaMes tbody tr:hover { background: none; } #tablaMes .cum-th, #tablaMes .cum-td { min-width: 0; } }

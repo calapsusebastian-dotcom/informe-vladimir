@@ -776,16 +776,21 @@ function renderMes() {
   $('#mBajo').textContent = bajo;
 
   const orden = filas.slice().sort((a, b) => (b.d.ok ? b.d.v : -1) - (a.d.ok ? a.d.v : -1));
-  $('#tablaMes').innerHTML = `<thead><tr><th>Área</th><th class="num">Meta</th><th class="num">Real</th><th class="num">Diferencia</th><th>Cumplimiento</th></tr></thead><tbody>` +
+  const maxV = Math.max(1.2, ...orden.filter((f) => f.d.ok).map((f) => f.d.v));
+  const tick = (100 / (maxV * 100) * 100).toFixed(2);
+  $('#tablaMes').innerHTML = `<thead><tr><th>Área</th><th class="num">Meta</th><th class="num">Real</th><th class="num">Diferencia</th><th class="cum-th">Cumplimiento</th></tr></thead><tbody>` +
     orden.map(({ ind, d, e }) => {
       const dif = d.ok ? d.r - d.m : null;
-      const u = ind.unidad ? ` <span class="unit">${esc(ind.unidad)}</span>` : '';
-      return `<tr>
-        <td class="area"><button class="link-btn" data-abrir="${ind.id}">${esc(ind.nombre)}</button></td>
-        <td class="num">${d.m > 0 ? fmt(d.m) : '—'}${d.m > 0 ? u : ''}</td>
-        <td class="num">${!isNaN(d.r) ? fmt(d.r) : '—'}${!isNaN(d.r) ? u : ''}</td>
+      const cum = e
+        ? `<div class="cum"><div class="cum-top"><strong>${fmt(d.v * 100, 1)} %</strong><span class="pill ${e.c}">${e.t}</span></div>
+             <div class="cum-track"><span class="cum-fill" style="width:${(d.v / maxV * 100).toFixed(2)}%;background:${COL[e.c]}"></span><span class="cum-tick" style="left:${tick}%"></span></div></div>`
+        : '<span class="pill gray">Sin real aún</span>';
+      return `<tr class="${e ? '' : 'sin'}" style="--c:${e ? COL[e.c] : 'transparent'}">
+        <td class="area"><button class="link-btn" data-abrir="${ind.id}">${esc(ind.nombre)}</button>${ind.unidad ? `<small class="unit-line">${esc(ind.unidad)}</small>` : ''}</td>
+        <td class="num">${d.m > 0 ? fmt(d.m) : '—'}</td>
+        <td class="num real">${!isNaN(d.r) ? fmt(d.r) : '—'}</td>
         <td class="num ${dif == null ? '' : dif >= 0 ? 'txt-green' : 'txt-red'}">${dif == null ? '—' : (dif > 0 ? '+' : '') + fmt(dif)}</td>
-        <td>${e ? `<span class="pill ${e.c}">${fmt(d.v * 100, 1)} % · ${e.t}</span>` : '<span class="pill gray">Sin real aún</span>'}</td>
+        <td class="cum-td">${cum}</td>
       </tr>`;
     }).join('') + '</tbody>';
 
