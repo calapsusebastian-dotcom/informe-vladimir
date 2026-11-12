@@ -739,7 +739,7 @@ function renderInforme() {
 
 /** Mini-gráfica del año: una barra por mes, coloreada por estado; el mes elegido queda resaltado */
 function spark(ds, ind, sel) {
-  const W = 96, H = 28, bw = 5, gap = 3, cap = 1.2;
+  const W = 152, H = 44, bw = 9, gap = 4, cap = 1.2;
   let s = `<svg viewBox="0 0 ${W} ${H}" class="spark" role="img" aria-label="Cumplimiento mes a mes">`;
   const y100 = H - (1 / cap) * (H - 2);
   s += `<line x1="0" x2="${W}" y1="${y100.toFixed(1)}" y2="${y100.toFixed(1)}" stroke="#c9ced6" stroke-dasharray="2 2"/>`;

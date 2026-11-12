@@ -470,7 +470,7 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 .ico.gray  { background: #c9ced6; box-shadow: 0 0 0 4px #eceef2; }
 #tablaMes td.area { box-shadow: none; padding-left: 14px; }
 
-.spark { width: 96px; height: 28px; display: block; }
+.spark { width: 152px; height: 44px; display: block; }
 .trend { white-space: nowrap; }
 
 #tablaMes .cum-top strong { font-size: 17px; }
