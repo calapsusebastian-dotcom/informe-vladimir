@@ -148,15 +148,6 @@ function gauge(v, ind) {
   return s + '</svg>';
 }
 
-/** Número corto para etiquetas: 2.530 → 2,5k · 1.250.000 → 1,3 M */
-function corto(n) {
-  const a = Math.abs(n);
-  if (a >= 1e6) return fmt(n / 1e6, 1).replace(/,0$/, '') + ' M';
-  if (a >= 1e4) return fmt(n / 1e3, 0) + 'k';
-  if (a >= 1e3) return fmt(n / 1e3, 1).replace(/,0$/, '') + 'k';
-  return fmt(n);
-}
-
 function pasoBonito(x) {
   if (!(x > 0)) return 1;
   const p = Math.pow(10, Math.floor(Math.log10(x)));
@@ -185,14 +176,14 @@ function barras(datos, ind) {
     const x0 = pl + cw * i + cw / 2;
     if (d.m > 0) {
       s += `<rect x="${x0 - bw - 2}" y="${H - pb - h(d.m)}" width="${bw}" height="${h(d.m)}" rx="3" fill="#c9ced6" class="bar" style="animation-delay:${i * 90}ms"><title>${MESES[i]} · Meta ${fmt(d.m)}</title></rect>`;
-      s += `<text class="dato" x="${x0 - bw / 2 - 2}" y="${H - pb - h(d.m) - 6}" text-anchor="middle" font-size="10.5" fill="#8a919c" style="animation-delay:${i * 90 + 900}ms">${corto(d.m)}</text>`;
+      s += `<text class="dato" x="${x0 - 2}" y="${H - pb - h(d.m) - 6}" text-anchor="end" font-size="10.5" fill="#8a919c" style="animation-delay:${i * 90 + 900}ms">${fmt(d.m)}</text>`;
     }
     if (d.ok) {
       const e = estado(d.v, ind);
       s += `<rect x="${x0 + 2}" y="${H - pb - h(d.r)}" width="${bw}" height="${h(d.r)}" rx="3" fill="${COL[e.c]}" class="bar" style="animation-delay:${i * 90 + 250}ms"><title>${MESES[i]} · Real ${fmt(d.r)} (${fmt(d.v * 100, 1)} %)</title></rect>`;
       const ty = H - pb - h(d.r);
-      s += `<text class="dato" x="${x0 + bw / 2 + 2}" y="${ty - 17}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${e.c === 'green' ? '#3b6d11' : e.c === 'amber' ? '#854f0b' : '#a32d2d'}" style="animation-delay:${i * 90 + 1000}ms">${corto(d.r)}</text>`;
-      s += `<text class="dato" x="${x0 + bw / 2 + 2}" y="${ty - 5}" text-anchor="middle" font-size="10" fill="#6b7280" style="animation-delay:${i * 90 + 1050}ms">${fmt(d.v * 100)}%</text>`;
+      s += `<text class="dato" x="${x0 + 2}" y="${ty - 17}" text-anchor="start" font-size="11.5" font-weight="700" fill="${e.c === 'green' ? '#3b6d11' : e.c === 'amber' ? '#854f0b' : '#a32d2d'}" style="animation-delay:${i * 90 + 1000}ms">${fmt(d.r)}</text>`;
+      s += `<text class="dato" x="${x0 + 2}" y="${ty - 5}" text-anchor="start" font-size="10" fill="#6b7280" style="animation-delay:${i * 90 + 1050}ms">${fmt(d.v * 100)}%</text>`;
     }
     s += `<text x="${x0}" y="${H - pb + 20}" text-anchor="middle" font-size="12" fill="#6b7280">${ABR[i]}</text>`;
   });
@@ -242,7 +233,7 @@ function acumulado(datos, ind) {
     s += linea(serie.map((x) => x.r), accent, 'stroke-width="3" stroke-linejoin="round"');
     serie.slice(0, ultimo + 1).forEach((x, i) => {
       s += `<circle cx="${X(i)}" cy="${Y(x.r)}" r="3.5" fill="${accent}" class="fade-in" style="animation-delay:${400 + i * 80}ms"><title>${MESES[i]} · Real acumulado ${fmt(x.r)} · Meta acumulada ${fmt(x.m)}</title></circle>`;
-      if (i !== ultimo) s += `<text class="dato" x="${X(i)}" y="${Y(x.r) - 10}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${accent}" style="animation-delay:${700 + i * 80}ms">${corto(x.r)}</text>`;
+      if (i !== ultimo) s += `<text class="dato" x="${X(i)}" y="${Y(x.r) - 10}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${accent}" style="animation-delay:${700 + i * 80}ms">${fmt(x.r)}</text>`;
     });
     const u = serie[ultimo], brecha = u.r - u.m;
     s += `<text x="${X(ultimo) + 10}" y="${Y(u.r) + 4}" font-size="12" font-weight="600" fill="${accent}">${fmt(u.r)}</text>`;
