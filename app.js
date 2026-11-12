@@ -156,8 +156,13 @@ function pasoBonito(x) {
 }
 
 /** Barras agrupadas: meta (gris) y real (color según estado) */
+/** Cómo se muestran los datos en las barras: 'tabla' (debajo), 'barras' (encima de cada barra) o 'ninguno' */
+let modoDatos = 'tabla';
+try { const m = localStorage.getItem('tablero-modo-datos'); if (['tabla', 'barras', 'ninguno'].includes(m)) modoDatos = m; } catch (e) { /* sin almacenamiento */ }
+
 function barras(datos, ind) {
-  const W = 960, H = 320, pl = 84, pr = 16, pt = 36, pb = 40;
+  const tabla = modoDatos === 'tabla', encima = modoDatos === 'barras';
+  const W = 960, H = tabla ? 366 : 320, pl = 84, pr = 16, pt = encima ? 36 : 20, pb = tabla ? 86 : 40;
   const vals = datos.flatMap((d) => [d.m, d.r, d.a]).filter((v) => v > 0);
   const max = vals.length ? Math.max(...vals) : 1;
   const paso = pasoBonito(max / 4);
@@ -172,21 +177,35 @@ function barras(datos, ind) {
     s += `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="#eceef2"/>`;
     s += `<text x="${pl - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#6b7280">${fmt(t)}</text>`;
   }
+  if (tabla) s += `<rect x="${pl}" y="${H - pb + 44 + 18 - 14}" width="${W - pl - pr}" height="18" rx="4" fill="#f4f5f7"/>`;
   datos.forEach((d, i) => {
     const x0 = pl + cw * i + cw / 2;
     if (d.m > 0) {
       s += `<rect x="${x0 - bw - 2}" y="${H - pb - h(d.m)}" width="${bw}" height="${h(d.m)}" rx="3" fill="#c9ced6" class="bar" style="animation-delay:${i * 90}ms"><title>${MESES[i]} · Meta ${fmt(d.m)}</title></rect>`;
-      s += `<text class="dato" x="${x0 - 2}" y="${H - pb - h(d.m) - 6}" text-anchor="end" font-size="10.5" fill="#8a919c" style="animation-delay:${i * 90 + 900}ms">${fmt(d.m)}</text>`;
+      if (encima) s += `<text class="dato" x="${x0 - 2}" y="${H - pb - h(d.m) - 6}" text-anchor="end" font-size="10.5" fill="#8a919c" style="animation-delay:${i * 90 + 900}ms">${fmt(d.m)}</text>`;
     }
     if (d.ok) {
       const e = estado(d.v, ind);
       s += `<rect x="${x0 + 2}" y="${H - pb - h(d.r)}" width="${bw}" height="${h(d.r)}" rx="3" fill="${COL[e.c]}" class="bar" style="animation-delay:${i * 90 + 250}ms"><title>${MESES[i]} · Real ${fmt(d.r)} (${fmt(d.v * 100, 1)} %)</title></rect>`;
       const ty = H - pb - h(d.r);
-      s += `<text class="dato" x="${x0 + 2}" y="${ty - 17}" text-anchor="start" font-size="11.5" font-weight="700" fill="${e.c === 'green' ? '#3b6d11' : e.c === 'amber' ? '#854f0b' : '#a32d2d'}" style="animation-delay:${i * 90 + 1000}ms">${fmt(d.r)}</text>`;
-      s += `<text class="dato" x="${x0 + 2}" y="${ty - 5}" text-anchor="start" font-size="10" fill="#6b7280" style="animation-delay:${i * 90 + 1050}ms">${fmt(d.v * 100)}%</text>`;
+      if (encima) s += `<text class="dato" x="${x0 + 2}" y="${ty - 17}" text-anchor="start" font-size="11.5" font-weight="700" fill="${e.c === 'green' ? '#3b6d11' : e.c === 'amber' ? '#854f0b' : '#a32d2d'}" style="animation-delay:${i * 90 + 1000}ms">${fmt(d.r)}</text>`;
+      if (encima) s += `<text class="dato" x="${x0 + 2}" y="${ty - 5}" text-anchor="start" font-size="10" fill="#6b7280" style="animation-delay:${i * 90 + 1050}ms">${fmt(d.v * 100)}%</text>`;
     }
     s += `<text x="${x0}" y="${H - pb + 20}" text-anchor="middle" font-size="12" fill="#6b7280">${ABR[i]}</text>`;
+    if (tabla) {
+      const y1 = H - pb + 44, y2 = y1 + 18, y3 = y2 + 18, dl = i * 60 + 500;
+      const col = d.ok ? { green: '#3b6d11', amber: '#854f0b', red: '#a32d2d' }[estado(d.v, ind).c] : '#9aa1ab';
+      s += `<text class="dato" x="${x0}" y="${y1}" text-anchor="middle" font-size="11" fill="#6b7280" style="animation-delay:${dl}ms">${d.m > 0 ? fmt(d.m) : '—'}</text>`;
+      s += `<text class="dato" x="${x0}" y="${y2}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${col}" style="animation-delay:${dl + 40}ms">${d.ok ? fmt(d.r) : '—'}</text>`;
+      s += `<text class="dato" x="${x0}" y="${y3}" text-anchor="middle" font-size="11" font-weight="600" fill="${col}" style="animation-delay:${dl + 80}ms">${d.ok ? fmt(d.v * 100, 1) + '%' : '—'}</text>`;
+    }
   });
+  if (tabla) {
+    const y1 = H - pb + 44, y2 = y1 + 18, y3 = y2 + 18;
+    [['Meta', y1], ['Real', y2], ['Cumpl.', y3]].forEach(([t, y]) => {
+      s += `<text x="${pl - 8}" y="${y}" text-anchor="end" font-size="11" font-weight="600" fill="#6b7280">${t}</text>`;
+    });
+  }
   // Año anterior: línea punteada con puntos
   const pts = datos.map((d, i) => d.a >= 0 ? [pl + cw * i + cw / 2, H - pb - h(d.a), d.a, i] : null).filter(Boolean);
   if (pts.length && datos.some((d) => d.a > 0)) {
@@ -913,6 +932,19 @@ function renderDetalle() {
   $('#lg2').textContent = `En riesgo: ${fmt(ind.lo)} a ${fmt(ind.hi)} %`;
   $('#lg3').textContent = `En meta: ${fmt(ind.hi)} % o más`;
 }
+
+function marcarModo() {
+  document.querySelectorAll('#segDatos button').forEach((b) => b.classList.toggle('active', b.dataset.modo === modoDatos));
+}
+$('#segDatos').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-modo]');
+  if (!b) return;
+  modoDatos = b.dataset.modo;
+  try { localStorage.setItem('tablero-modo-datos', modoDatos); } catch (err) { /* sin almacenamiento */ }
+  marcarModo();
+  $('#barras').innerHTML = barras(calcular(actual()).datos, actual());
+});
+marcarModo();
 
 $('#btnImprimir').addEventListener('click', () => {
   try { window.print(); } catch (e) { /* bloqueado */ }

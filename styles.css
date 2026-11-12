@@ -420,3 +420,9 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 .bar:hover { filter: brightness(1.1) saturate(1.1); }
 @media (prefers-reduced-motion: reduce) { .dato { animation: none; } }
 @media print { .dato { animation: none !important; } }
+
+/* Selector de cómo mostrar los datos */
+.seg { display: inline-flex; align-items: center; gap: 4px; background: var(--bg); padding: 4px 4px 4px 12px; border-radius: 10px; margin: 4px 0 8px; font-size: 12px; color: var(--muted); }
+.seg button { border: 0; background: transparent; font: inherit; font-size: 12.5px; color: var(--muted); padding: 5px 12px; border-radius: 7px; cursor: pointer; }
+.seg button:hover { color: var(--text); }
+.seg button.active { background: var(--card); color: var(--accent); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
