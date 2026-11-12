@@ -221,7 +221,7 @@ td input { width: 100%; max-width: 220px; }
 .ring { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #5f6670; margin-right: 6px; vertical-align: -1px; }
 .line { display: inline-block; width: 18px; border-top: 3px solid; margin-right: 6px; vertical-align: 3px; }
 .line.dashed { border-top: 2px dashed #5f6670; }
-.line.dotted { border-top: 2px dotted #b4b9c2; }
+.line.dotted { border-top: 3px dotted #7c5cc4; }
 
 /* ---------- Nube / ingreso ---------- */
 .top-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }

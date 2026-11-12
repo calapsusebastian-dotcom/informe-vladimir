@@ -254,7 +254,10 @@ function acumulado(datos, ind) {
   const linea = (vals, color, extra) =>
     `<polyline class="${/dasharray/.test(extra) ? 'fade-in' : 'draw'}" ${/dasharray/.test(extra) ? '' : 'pathLength="1"'} points="${vals.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ')}" fill="none" stroke="${color}" ${extra}/>`;
 
-  if (tieneAnt) s += linea(serie.map((x) => x.a), '#b4b9c2', 'stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round"');
+  if (tieneAnt) {
+    s += linea(serie.map((x) => x.a), '#7c5cc4', 'stroke-width="2.5" stroke-dasharray="1 6" stroke-linecap="round"');
+    serie.forEach((x, i) => { s += `<circle cx="${X(i)}" cy="${Y(x.a)}" r="3" fill="#fff" stroke="#7c5cc4" stroke-width="1.8" class="fade-in" style="animation-delay:${300 + i * 60}ms"><title>${MESES[i]} · ${ind.anio - 1} acumulado ${fmt(x.a)}</title></circle>`; });
+  }
   s += linea(serie.map((x) => x.m), '#5f6670', 'stroke-width="2" stroke-dasharray="6 5"');
 
   if (ultimo >= 0) {
@@ -270,6 +273,11 @@ function acumulado(datos, ind) {
     s += `<text x="${X(ultimo) + 10}" y="${Y(u.r) + 20}" font-size="11" fill="${brecha >= 0 ? '#3b6d11' : '#a32d2d'}">${brecha >= 0 ? '+' : ''}${fmt(brecha)} vs. meta</text>`;
   }
   const uM = serie[11];
+  if (tieneAnt) {
+    let ya = Y(uM.a) + 4;
+    if (Math.abs(ya - (Y(uM.m) + 4)) < 14) ya += ya >= Y(uM.m) + 4 ? 13 : -13;
+    s += `<text x="${X(11) + 8}" y="${ya}" font-size="11" font-weight="600" fill="#7c5cc4">${ind.anio - 1} ${fmt(uM.a)}</text>`;
+  }
   s += `<text x="${X(11) + 8}" y="${Y(uM.m) + 4}" font-size="11" fill="#5f6670">Meta ${fmt(uM.m)}</text>`;
   return s + '</svg>';
 }
