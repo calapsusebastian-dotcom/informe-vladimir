@@ -893,15 +893,15 @@ function renderRanking(calc) {
   $('#ranking').innerHTML = lista.map(({ ind, c }, k) => {
     const e = estado(c.total, ind);
     return `
-      <button class="rank-row" data-abrir="${ind.id}">
-        <span class="rank-pos">${k + 1}</span>
-        <span class="rank-name">${esc(ind.nombre)}</span>
+      <button class="rank-row" style="--mp:${metaPos}%" data-abrir="${ind.id}">
+        <span class="rank-pos ${k < 3 ? 'p' + (k + 1) : ''}">${k + 1}</span>
+        <span class="rank-name">${esc(ind.nombre)}${ind.unidad ? `<small>${esc(ind.unidad)}</small>` : ''}</span>
         <span class="rank-track">
           <span class="rank-bar" style="width:${(c.total / escala * 100).toFixed(2)}%;background:${COL[e.c]}"></span>
           <span class="rank-meta" style="left:${metaPos}%"></span>
         </span>
-        <span class="rank-val">${fmt(c.total * 100, 1)}%</span>
-        <span class="rank-var ${clsVar(c.vari)}">${fmtVar(c.vari)}</span>
+        <span class="rank-val"><strong>${fmt(c.total * 100, 1)}%</strong><small class="st ${e.c}">${e.t}</small></span>
+        <span class="rank-var">${c.vari == null ? '<span class="muted">—</span>' : `<span class="vchip ${c.vari >= 0 ? 'up' : 'down'}">${c.vari >= 0 ? '▲' : '▼'} ${fmtVar(c.vari)}</span>`}</span>
       </button>`;
   }).join('') + sinDato.map(({ ind }) => `
       <button class="rank-row" data-abrir="${ind.id}">
