@@ -604,7 +604,8 @@ function calcular(ind) {
 }
 
 function renderChips() {
-  const chips = [`<button class="chip ${vistaInforme === 'resumen' ? 'active' : ''}" data-chip="resumen">Resumen general</button>`]
+  const chips = [`<button class="chip ${vistaInforme === 'resumen' ? 'active' : ''}" data-chip="resumen">Resumen general</button>`,
+                 `<button class="chip ${vistaInforme === 'mes' ? 'active' : ''}" data-chip="mes">Por mes</button>`]
     .concat(state.indicadores.map((i) =>
       `<button class="chip ${vistaInforme === 'detalle' && i.id === state.actual ? 'active' : ''}" data-chip="${i.id}">${esc(i.nombre)}</button>`));
   $('#chips').innerHTML = chips.join('');
@@ -614,6 +615,7 @@ $('#chips').addEventListener('click', (e) => {
   const b = e.target.closest('[data-chip]');
   if (!b) return;
   if (b.dataset.chip === 'resumen') vistaInforme = 'resumen';
+  else if (b.dataset.chip === 'mes') vistaInforme = 'mes';
   else { vistaInforme = 'detalle'; state.actual = b.dataset.chip; guardar(); }
   renderInforme();
 });
@@ -638,9 +640,70 @@ function renderInforme() {
   renderEncabezado();
   renderChips();
   $('#vistaResumen').style.display = vistaInforme === 'resumen' ? '' : 'none';
+  $('#vistaMes').style.display = vistaInforme === 'mes' ? '' : 'none';
   $('#vistaDetalle').style.display = vistaInforme === 'detalle' ? '' : 'none';
-  if (vistaInforme === 'resumen') renderResumen(); else renderDetalle();
+  if (vistaInforme === 'resumen') renderResumen();
+  else if (vistaInforme === 'mes') renderMes();
+  else renderDetalle();
 }
+
+/* ---------- Vista por mes: todas las áreas del mes elegido ---------- */
+let mesSel = null;
+
+function ultimoMesConDato() {
+  let u = -1;
+  state.indicadores.forEach((ind) => ind.meses.forEach((x, i) => {
+    if (x.real !== '' && !isNaN(num(x.real)) && num(x.meta) > 0 && i > u) u = i;
+  }));
+  return u >= 0 ? u : 0;
+}
+
+function renderMes() {
+  if (mesSel == null) mesSel = ultimoMesConDato();
+  $('#selMes').innerHTML = MESES.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+  $('#selMes').value = mesSel;
+
+  const anios = [...new Set(state.indicadores.map((i) => i.anio))].join(', ');
+  $('#mesSub').textContent = `${MESES[mesSel]} ${anios} · Meta vs. real de cada área`;
+
+  let enMeta = 0, enRiesgo = 0, bajo = 0;
+  const filas = state.indicadores.map((ind) => {
+    const d = calcular(ind).datos[mesSel];
+    const e = d.ok ? estado(d.v, ind) : null;
+    if (e) { if (e.c === 'green') enMeta++; else if (e.c === 'amber') enRiesgo++; else bajo++; }
+    return { ind, d, e };
+  });
+  $('#mEnMeta').textContent = enMeta;
+  $('#mRiesgo').textContent = enRiesgo;
+  $('#mBajo').textContent = bajo;
+
+  const orden = filas.slice().sort((a, b) => (b.d.ok ? b.d.v : -1) - (a.d.ok ? a.d.v : -1));
+  $('#tablaMes').innerHTML = `<thead><tr><th>Área</th><th>Unidad</th><th>Meta</th><th>Real</th><th>Diferencia</th><th>Cumplimiento</th></tr></thead><tbody>` +
+    orden.map(({ ind, d, e }) => {
+      const dif = d.ok ? d.r - d.m : null;
+      return `<tr>
+        <td><button class="link-btn" data-abrir="${ind.id}">${esc(ind.nombre)}</button></td>
+        <td class="muted">${esc(ind.unidad)}</td>
+        <td>${d.m > 0 ? fmt(d.m) : '—'}</td>
+        <td>${!isNaN(d.r) ? fmt(d.r) : '—'}</td>
+        <td class="${dif == null ? '' : dif >= 0 ? 'txt-green' : 'txt-red'}">${dif == null ? '—' : (dif > 0 ? '+' : '') + fmt(dif)}</td>
+        <td>${e ? `<span class="pill ${e.c}">${fmt(d.v * 100, 1)}% · ${e.t}</span>` : '<span class="pill gray">Pendiente</span>'}</td>
+      </tr>`;
+    }).join('') + '</tbody>';
+
+  $('#gridMes').innerHTML = filas.map(({ ind, d, e }) => `
+    <button class="month res-card" data-abrir="${ind.id}">
+      <div class="month-head"><strong>${esc(ind.nombre)}</strong></div>
+      <div class="res-meta">${e ? `<span class="pill ${e.c}">${e.t}</span>` : '<span class="pill gray">Pendiente</span>'}<span>${esc(ind.unidad)}</span></div>
+      ${gauge(d.v, ind)}
+      <div class="month-foot">
+        <span>Meta: ${d.m > 0 ? fmt(d.m) : '—'}</span>
+        <span>Real: ${!isNaN(d.r) ? fmt(d.r) : '—'}</span>
+      </div>
+    </button>`).join('');
+}
+
+$('#selMes').addEventListener('change', (e) => { mesSel = +e.target.value; renderMes(); });
 
 function renderResumen() {
   const anios = [...new Set(state.indicadores.map((i) => i.anio))].join(', ');
@@ -719,7 +782,7 @@ function renderSemaforo(calc) {
   $('#semaforo').innerHTML = head + `<tbody>${body}</tbody>`;
 }
 
-['#ranking', '#semaforo'].forEach((sel) => $(sel).addEventListener('click', (e) => {
+['#ranking', '#semaforo', '#tablaMes', '#gridMes'].forEach((sel) => $(sel).addEventListener('click', (e) => {
   const b = e.target.closest('[data-abrir]');
   if (!b) return;
   state.actual = b.dataset.abrir;

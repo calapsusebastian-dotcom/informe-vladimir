@@ -275,3 +275,8 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
   .h-cell, .h-tot, .h-none, .h-red, .h-amber, .h-green { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .rank-bar, .rank-meta, .report-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Vista por mes */
+.link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 500; color: var(--text); cursor: pointer; text-align: left; }
+.link-btn:hover { color: var(--accent); text-decoration: underline; }
+#vistaMes label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }

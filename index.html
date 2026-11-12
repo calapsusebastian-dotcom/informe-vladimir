@@ -200,6 +200,34 @@
         </div>
       </div>
 
+      <div id="vistaMes">
+        <div class="card">
+          <div class="row between">
+            <div>
+              <h2 class="report-title">Todas las áreas por mes</h2>
+              <p id="mesSub" class="muted"></p>
+            </div>
+            <label class="no-print" style="margin:0">Mes
+              <select id="selMes" aria-label="Mes"></select>
+            </label>
+          </div>
+          <div class="kpis kpis-3" style="margin-top:14px">
+            <div class="kpi"><span>Áreas en meta</span><strong id="mEnMeta" class="txt-green">0</strong></div>
+            <div class="kpi"><span>Áreas en riesgo</span><strong id="mRiesgo" class="txt-amber">0</strong></div>
+            <div class="kpi"><span>Áreas bajo la meta</span><strong id="mBajo" class="txt-red">0</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Cumplimiento del mes por área</h2>
+          <div class="table-wrap"><table id="tablaMes"></table></div>
+        </div>
+        <div class="card">
+          <h2>Detalle por área</h2>
+          <p class="hint">Toca un área para ver su detalle del año.</p>
+          <div id="gridMes" class="months"></div>
+        </div>
+      </div>
+
       <div id="vistaDetalle">
       <div class="card">
         <div class="row between">
