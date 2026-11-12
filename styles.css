@@ -411,3 +411,12 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 
   .pm-pie { margin-top: 14px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 10.5px; color: var(--muted); text-align: center; }
 }
+
+/* Etiquetas de datos en los gráficos */
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.dato { animation: rise .7s ease-out both; pointer-events: none; }
+.esperar .dato { animation-play-state: paused; }
+.bar { transition: filter .2s; }
+.bar:hover { filter: brightness(1.1) saturate(1.1); }
+@media (prefers-reduced-motion: reduce) { .dato { animation: none; } }
+@media print { .dato { animation: none !important; } }
