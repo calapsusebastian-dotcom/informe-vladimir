@@ -443,3 +443,54 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 .cum-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #1d2129; border-radius: 1px; }
 .esperar .cum-fill { animation-play-state: paused; }
 @media print { .cum-fill { animation: none !important; } #tablaMes tbody tr:hover { background: none; } #tablaMes .cum-th, #tablaMes .cum-td { min-width: 0; } }
+
+/* Cambio contra el mes anterior */
+.delta { display: inline-block; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+.delta.up { color: var(--green-tx); }
+.delta.down { color: var(--red-tx); }
+.delta.flat { color: var(--muted); }
+#tablaMes td.num .unit-line { text-align: right; }
+
+/* =========================================================
+   Tabla del mes: diseño visual (filas tipo tarjeta, iconos, tendencia)
+   ========================================================= */
+#tablaMes { border-collapse: separate; border-spacing: 0 8px; }
+#tablaMes thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; border-bottom: 0; padding-bottom: 2px; }
+#tablaMes tbody td { background: #f8f9fb; border: 0; padding-top: 12px; padding-bottom: 12px; transition: background .15s, box-shadow .15s; }
+#tablaMes tbody td:first-child { border-radius: 12px 0 0 12px; }
+#tablaMes tbody td:last-child { border-radius: 0 12px 12px 0; }
+#tablaMes tbody tr:hover td { background: #fff; box-shadow: 0 6px 14px -8px rgba(20,30,50,.28); }
+#tablaMes tbody tr:hover { background: none; }
+
+.area-wrap { display: flex; align-items: center; gap: 12px; }
+.ico { flex: none; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; }
+.ico.green { background: var(--green); box-shadow: 0 0 0 4px var(--green-bg); }
+.ico.amber { background: var(--amber); box-shadow: 0 0 0 4px var(--amber-bg); }
+.ico.red   { background: var(--red);   box-shadow: 0 0 0 4px var(--red-bg); }
+.ico.gray  { background: #c9ced6; box-shadow: 0 0 0 4px #eceef2; }
+#tablaMes td.area { box-shadow: none; padding-left: 14px; }
+
+.spark { width: 96px; height: 28px; display: block; }
+.trend { white-space: nowrap; }
+
+#tablaMes .cum-top strong { font-size: 17px; }
+#tablaMes .cum-track { height: 10px; border-radius: 6px; background: #e4e7ec; }
+#tablaMes .cum-fill { border-radius: 6px; background-image: linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,0)); background-blend-mode: soft-light; }
+#tablaMes .cum-tick { top: -4px; bottom: -4px; }
+
+/* Celulares: cada fila se convierte en tarjeta */
+@media (max-width: 760px) {
+  #tablaMes, #tablaMes tbody { display: block; }
+  #tablaMes thead { display: none; }
+  #tablaMes tbody tr { display: block; background: #f8f9fb; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  #tablaMes tbody td, #tablaMes tbody tr:hover td { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: transparent; box-shadow: none; border-radius: 0; padding: 5px 0; text-align: right; }
+  #tablaMes tbody td[data-l]::before { content: attr(data-l); font-size: 12px; color: var(--muted); font-weight: 500; text-align: left; }
+  #tablaMes td.area { padding: 0 0 8px; }
+  #tablaMes td.cum-td { display: block; padding-top: 8px; text-align: left; min-width: 0; }
+  #tablaMes .unit-line { text-align: left; }
+}
+@media print {
+  #tablaMes tbody td { padding-top: 7px; padding-bottom: 7px; }
+  .ico { width: 22px; height: 22px; font-size: 11px; box-shadow: none !important; }
+  #tablaMes .cum-top strong { font-size: 13px; }
+}

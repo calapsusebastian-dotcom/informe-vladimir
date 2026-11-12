@@ -737,6 +737,24 @@ function renderInforme() {
   else renderDetalle();
 }
 
+/** Mini-gráfica del año: una barra por mes, coloreada por estado; el mes elegido queda resaltado */
+function spark(ds, ind, sel) {
+  const W = 96, H = 28, bw = 5, gap = 3, cap = 1.2;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="spark" role="img" aria-label="Cumplimiento mes a mes">`;
+  const y100 = H - (1 / cap) * (H - 2);
+  s += `<line x1="0" x2="${W}" y1="${y100.toFixed(1)}" y2="${y100.toFixed(1)}" stroke="#c9ced6" stroke-dasharray="2 2"/>`;
+  ds.forEach((d, i) => {
+    const x = i * (bw + gap);
+    if (i === sel) s += `<rect x="${x - 1.5}" y="0" width="${bw + 3}" height="${H}" rx="3" fill="#1d2129" opacity=".07"/>`;
+    if (!d.ok) { s += `<rect x="${x}" y="${H - 2}" width="${bw}" height="2" rx="1" fill="#d5d9e0"/>`; return; }
+    const hh = Math.max(2, Math.min(d.v, cap) / cap * (H - 2));
+    s += `<rect x="${x}" y="${(H - hh).toFixed(1)}" width="${bw}" height="${hh.toFixed(1)}" rx="1.5" fill="${COL[estado(d.v, ind).c]}" opacity="${i === sel ? 1 : .55}"><title>${MESES[i]} · ${fmt(d.v * 100, 1)} %</title></rect>`;
+  });
+  return s + '</svg>';
+}
+
+const ICONO = { green: '✓', amber: '!', red: '✕' };
+
 /* ---------- Vista por mes: todas las áreas del mes elegido ---------- */
 let mesSel = null;
 
@@ -766,10 +784,18 @@ function renderMes() {
 
   let enMeta = 0, enRiesgo = 0, bajo = 0;
   const filas = delAnio().map((ind) => {
-    const d = calcular(ind).datos[mesSel];
+    const cc = calcular(ind);
+    const d = cc.datos[mesSel];
+    // Mes anterior: el mes de antes del mismo año; en enero, diciembre del año anterior
+    let p = null;
+    if (mesSel > 0) p = cc.datos[mesSel - 1];
+    else {
+      const pi = state.indicadores.find((x) => x.nombre === ind.nombre && Number(x.anio) === Number(ind.anio) - 1);
+      if (pi) p = calcular(pi).datos[11];
+    }
     const e = d.ok ? estado(d.v, ind) : null;
     if (e) { if (e.c === 'green') enMeta++; else if (e.c === 'amber') enRiesgo++; else bajo++; }
-    return { ind, d, e };
+    return { ind, d, e, p, ds: cc.datos };
   });
   $('#mEnMeta').textContent = enMeta;
   $('#mRiesgo').textContent = enRiesgo;
@@ -778,18 +804,27 @@ function renderMes() {
   const orden = filas.slice().sort((a, b) => (b.d.ok ? b.d.v : -1) - (a.d.ok ? a.d.v : -1));
   const maxV = Math.max(1.2, ...orden.filter((f) => f.d.ok).map((f) => f.d.v));
   const tick = (100 / (maxV * 100) * 100).toFixed(2);
-  $('#tablaMes').innerHTML = `<thead><tr><th>Área</th><th class="num">Meta</th><th class="num">Real</th><th class="num">Diferencia</th><th class="cum-th">Cumplimiento</th></tr></thead><tbody>` +
-    orden.map(({ ind, d, e }) => {
+  $('#tablaMes').innerHTML = `<thead><tr><th>Área</th><th class="num">Meta</th><th class="num">Real</th><th class="num">Diferencia</th><th class="num">vs. ${MESES[(mesSel + 11) % 12].toLowerCase()}</th><th>Tendencia del año</th><th class="cum-th">Cumplimiento</th></tr></thead><tbody>` +
+    orden.map(({ ind, d, e, p, ds }) => {
       const dif = d.ok ? d.r - d.m : null;
+      let delta = '<span class="muted">—</span>';
+      if (d.ok && p && p.ok) {
+        const pts = (d.v - p.v) * 100;
+        const igual = Math.abs(pts) < 0.05;
+        const cls = igual ? 'flat' : pts > 0 ? 'up' : 'down';
+        delta = `<span class="delta ${cls}">${igual ? '＝' : pts > 0 ? '▲' : '▼'} ${igual ? '0,0' : (pts > 0 ? '+' : '') + fmt(pts, 1)} pts</span><small class="unit-line">antes ${fmt(p.v * 100, 1)} %</small>`;
+      }
       const cum = e
         ? `<div class="cum"><div class="cum-top"><strong>${fmt(d.v * 100, 1)} %</strong><span class="pill ${e.c}">${e.t}</span></div>
              <div class="cum-track"><span class="cum-fill" style="width:${(d.v / maxV * 100).toFixed(2)}%;background:${COL[e.c]}"></span><span class="cum-tick" style="left:${tick}%"></span></div></div>`
         : '<span class="pill gray">Sin real aún</span>';
       return `<tr class="${e ? '' : 'sin'}" style="--c:${e ? COL[e.c] : 'transparent'}">
-        <td class="area"><button class="link-btn" data-abrir="${ind.id}">${esc(ind.nombre)}</button>${ind.unidad ? `<small class="unit-line">${esc(ind.unidad)}</small>` : ''}</td>
-        <td class="num">${d.m > 0 ? fmt(d.m) : '—'}</td>
-        <td class="num real">${!isNaN(d.r) ? fmt(d.r) : '—'}</td>
-        <td class="num ${dif == null ? '' : dif >= 0 ? 'txt-green' : 'txt-red'}">${dif == null ? '—' : (dif > 0 ? '+' : '') + fmt(dif)}</td>
+        <td class="area"><div class="area-wrap"><span class="ico ${e ? e.c : 'gray'}">${e ? ICONO[e.c] : '…'}</span><div><button class="link-btn" data-abrir="${ind.id}">${esc(ind.nombre)}</button>${ind.unidad ? `<small class="unit-line">${esc(ind.unidad)}</small>` : ''}</div></div></td>
+        <td class="num" data-l="Meta">${d.m > 0 ? fmt(d.m) : '—'}</td>
+        <td class="num real" data-l="Real">${!isNaN(d.r) ? fmt(d.r) : '—'}</td>
+        <td class="num ${dif == null ? '' : dif >= 0 ? 'txt-green' : 'txt-red'}" data-l="Diferencia">${dif == null ? '—' : (dif > 0 ? '+' : '') + fmt(dif)}</td>
+        <td class="num" data-l="vs. mes anterior">${delta}</td>
+        <td class="trend" data-l="Tendencia">${spark(ds, ind, mesSel)}</td>
         <td class="cum-td">${cum}</td>
       </tr>`;
     }).join('') + '</tbody>';
