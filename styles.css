@@ -294,12 +294,12 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 @keyframes grow-x   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes draw     { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes fade     { from { opacity: 0; } to { opacity: 1; } }
-.g-fill   { stroke-dasharray: 100; animation: g-fill 1s cubic-bezier(.22,.8,.3,1) both; }
-.g-needle { transform-origin: 100px 86px; animation: g-needle 1s cubic-bezier(.22,.8,.3,1) both; }
-.bar      { transform-box: fill-box; transform-origin: bottom; animation: grow-y .7s cubic-bezier(.22,.8,.3,1) both; }
-.draw     { stroke-dasharray: 1; animation: draw 1.3s ease-out both; }
-.fade-in  { animation: fade .6s ease-out both; }
-.rank-bar { transform-origin: left; animation: grow-x .9s cubic-bezier(.22,.8,.3,1) both; }
+.g-fill   { stroke-dasharray: 100; animation: g-fill 2.2s cubic-bezier(.22,.8,.3,1) both; }
+.g-needle { transform-origin: 100px 86px; animation: g-needle 2.2s cubic-bezier(.22,.8,.3,1) both; }
+.bar      { transform-box: fill-box; transform-origin: bottom; animation: grow-y 1.3s cubic-bezier(.22,.8,.3,1) both; }
+.draw     { stroke-dasharray: 1; animation: draw 2.4s ease-out both; }
+.fade-in  { animation: fade 1s ease-out both; }
+.rank-bar { transform-origin: left; animation: grow-x 1.6s cubic-bezier(.22,.8,.3,1) both; }
 .h-cell, .pill { animation: fade .5s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .g-fill, .g-needle, .bar, .draw, .fade-in, .rank-bar, .h-cell, .pill { animation: none; }

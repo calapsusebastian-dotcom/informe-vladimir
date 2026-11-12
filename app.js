@@ -175,11 +175,11 @@ function barras(datos, ind) {
   datos.forEach((d, i) => {
     const x0 = pl + cw * i + cw / 2;
     if (d.m > 0) {
-      s += `<rect x="${x0 - bw - 2}" y="${H - pb - h(d.m)}" width="${bw}" height="${h(d.m)}" rx="3" fill="#c9ced6" class="bar" style="animation-delay:${i * 45}ms"><title>${MESES[i]} · Meta ${fmt(d.m)}</title></rect>`;
+      s += `<rect x="${x0 - bw - 2}" y="${H - pb - h(d.m)}" width="${bw}" height="${h(d.m)}" rx="3" fill="#c9ced6" class="bar" style="animation-delay:${i * 90}ms"><title>${MESES[i]} · Meta ${fmt(d.m)}</title></rect>`;
     }
     if (d.ok) {
       const e = estado(d.v, ind);
-      s += `<rect x="${x0 + 2}" y="${H - pb - h(d.r)}" width="${bw}" height="${h(d.r)}" rx="3" fill="${COL[e.c]}" class="bar" style="animation-delay:${i * 45 + 120}ms"><title>${MESES[i]} · Real ${fmt(d.r)} (${fmt(d.v * 100, 1)} %)</title></rect>`;
+      s += `<rect x="${x0 + 2}" y="${H - pb - h(d.r)}" width="${bw}" height="${h(d.r)}" rx="3" fill="${COL[e.c]}" class="bar" style="animation-delay:${i * 90 + 250}ms"><title>${MESES[i]} · Real ${fmt(d.r)} (${fmt(d.v * 100, 1)} %)</title></rect>`;
     }
     s += `<text x="${x0}" y="${H - pb + 20}" text-anchor="middle" font-size="12" fill="#6b7280">${ABR[i]}</text>`;
   });
