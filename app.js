@@ -114,7 +114,7 @@ function gauge(v, ind) {
   let s = `<svg viewBox="0 0 200 186" class="gauge" role="img" aria-label="Cumplimiento ${v == null ? 'sin dato' : fmt(v * 100, 1) + ' %'}">`;
   s += `<path d="${arc(0, 1)}" fill="none" stroke="#eceef2" stroke-width="13"/>`;
   if (v != null && v > 0.004) {
-    s += `<path d="${arc(0, Math.min(v, 1))}" fill="none" stroke="${COL[estado(v, ind).c]}" stroke-width="13"/>`;
+    s += `<path d="${arc(0, Math.min(v, 1))}" fill="none" stroke="${COL[estado(v, ind).c]}" stroke-width="13" pathLength="100" class="g-fill"/>`;
   }
   // Marcas de los rangos: desde dónde es "En riesgo" y desde dónde "En meta"
   [[L1, COL.amber], [L2, COL.green]].forEach(([x, c]) => {
@@ -142,7 +142,7 @@ function gauge(v, ind) {
   const tip = [cx + L * Math.cos(a), cy - L * Math.sin(a)];
   const tail = [cx - T * Math.cos(a), cy + T * Math.sin(a)];
   const px = Math.sin(a) * W, py = Math.cos(a) * W;
-  s += `<polygon points="${f(tip[0])},${f(tip[1])} ${f(cx + px)},${f(cy + py)} ${f(tail[0])},${f(tail[1])} ${f(cx - px)},${f(cy - py)}" fill="#1d2129"/>`;
+  s += `<g class="g-needle" style="--r:${(-270 * Math.min(Math.max(v, 0), 1)).toFixed(1)}deg"><polygon points="${f(tip[0])},${f(tip[1])} ${f(cx + px)},${f(cy + py)} ${f(tail[0])},${f(tail[1])} ${f(cx - px)},${f(cy - py)}" fill="#1d2129"/></g>`;
   s += `<circle cx="${cx}" cy="${cy}" r="5" fill="#1d2129"/><circle cx="${cx}" cy="${cy}" r="2" fill="#fff"/>`;
   s += `<text x="${cx}" y="180" text-anchor="middle" font-size="26" font-weight="600" fill="#1d2129">${fmt(v * 100, 1)}%</text>`;
   return s + '</svg>';
@@ -175,19 +175,19 @@ function barras(datos, ind) {
   datos.forEach((d, i) => {
     const x0 = pl + cw * i + cw / 2;
     if (d.m > 0) {
-      s += `<rect x="${x0 - bw - 2}" y="${H - pb - h(d.m)}" width="${bw}" height="${h(d.m)}" rx="3" fill="#c9ced6"><title>${MESES[i]} · Meta ${fmt(d.m)}</title></rect>`;
+      s += `<rect x="${x0 - bw - 2}" y="${H - pb - h(d.m)}" width="${bw}" height="${h(d.m)}" rx="3" fill="#c9ced6" class="bar" style="animation-delay:${i * 45}ms"><title>${MESES[i]} · Meta ${fmt(d.m)}</title></rect>`;
     }
     if (d.ok) {
       const e = estado(d.v, ind);
-      s += `<rect x="${x0 + 2}" y="${H - pb - h(d.r)}" width="${bw}" height="${h(d.r)}" rx="3" fill="${COL[e.c]}"><title>${MESES[i]} · Real ${fmt(d.r)} (${fmt(d.v * 100, 1)} %)</title></rect>`;
+      s += `<rect x="${x0 + 2}" y="${H - pb - h(d.r)}" width="${bw}" height="${h(d.r)}" rx="3" fill="${COL[e.c]}" class="bar" style="animation-delay:${i * 45 + 120}ms"><title>${MESES[i]} · Real ${fmt(d.r)} (${fmt(d.v * 100, 1)} %)</title></rect>`;
     }
     s += `<text x="${x0}" y="${H - pb + 20}" text-anchor="middle" font-size="12" fill="#6b7280">${ABR[i]}</text>`;
   });
   // Año anterior: línea punteada con puntos
   const pts = datos.map((d, i) => d.a >= 0 ? [pl + cw * i + cw / 2, H - pb - h(d.a), d.a, i] : null).filter(Boolean);
   if (pts.length && datos.some((d) => d.a > 0)) {
-    s += `<polyline points="${pts.map((q) => q[0] + ',' + q[1]).join(' ')}" fill="none" stroke="#5f6670" stroke-width="1.5" stroke-dasharray="4 4"/>`;
-    pts.forEach((q) => { s += `<circle cx="${q[0]}" cy="${q[1]}" r="3.5" fill="#fff" stroke="#5f6670" stroke-width="1.5"><title>${MESES[q[3]]} · ${ind.anio - 1}: ${fmt(q[2])}</title></circle>`; });
+    s += `<polyline points="${pts.map((q) => q[0] + ',' + q[1]).join(' ')}" fill="none" stroke="#5f6670" stroke-width="1.5" stroke-dasharray="4 4" class="fade-in" style="animation-delay:700ms"/>`;
+    pts.forEach((q) => { s += `<circle cx="${q[0]}" cy="${q[1]}" r="3.5" fill="#fff" stroke="#5f6670" stroke-width="1.5" class="fade-in" style="animation-delay:800ms"><title>${MESES[q[3]]} · ${ind.anio - 1}: ${fmt(q[2])}</title></circle>`; });
   }
   s += `<line x1="${pl}" x2="${W - pr}" y1="${H - pb}" y2="${H - pb}" stroke="#c9ced6"/>`;
   return s + '</svg>';
@@ -218,17 +218,17 @@ function acumulado(datos, ind) {
   }
   ABR.forEach((m, i) => { s += `<text x="${X(i)}" y="${H - 10}" text-anchor="middle" font-size="12" fill="#6b7280">${m}</text>`; });
   const linea = (vals, color, extra) =>
-    `<polyline points="${vals.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ')}" fill="none" stroke="${color}" ${extra}/>`;
+    `<polyline class="${/dasharray/.test(extra) ? 'fade-in' : 'draw'}" ${/dasharray/.test(extra) ? '' : 'pathLength="1"'} points="${vals.map((v, i) => v == null ? null : X(i) + ',' + Y(v)).filter(Boolean).join(' ')}" fill="none" stroke="${color}" ${extra}/>`;
 
   if (tieneAnt) s += linea(serie.map((x) => x.a), '#b4b9c2', 'stroke-width="2" stroke-dasharray="2 4" stroke-linecap="round"');
   s += linea(serie.map((x) => x.m), '#5f6670', 'stroke-width="2" stroke-dasharray="6 5"');
 
   if (ultimo >= 0) {
     const ptsR = serie.slice(0, ultimo + 1).map((x, i) => X(i) + ',' + Y(x.r));
-    s += `<polygon points="${X(0)},${Y(0)} ${ptsR.join(' ')} ${X(ultimo)},${Y(0)}" fill="${accent}" opacity="0.08"/>`;
+    s += `<polygon points="${X(0)},${Y(0)} ${ptsR.join(' ')} ${X(ultimo)},${Y(0)}" fill="${accent}" opacity="0.08" class="fade-in" style="animation-delay:900ms"/>`;
     s += linea(serie.map((x) => x.r), accent, 'stroke-width="3" stroke-linejoin="round"');
     serie.slice(0, ultimo + 1).forEach((x, i) => {
-      s += `<circle cx="${X(i)}" cy="${Y(x.r)}" r="3.5" fill="${accent}"><title>${MESES[i]} · Real acumulado ${fmt(x.r)} · Meta acumulada ${fmt(x.m)}</title></circle>`;
+      s += `<circle cx="${X(i)}" cy="${Y(x.r)}" r="3.5" fill="${accent}" class="fade-in" style="animation-delay:${400 + i * 80}ms"><title>${MESES[i]} · Real acumulado ${fmt(x.r)} · Meta acumulada ${fmt(x.m)}</title></circle>`;
     });
     const u = serie[ultimo], brecha = u.r - u.m;
     s += `<text x="${X(ultimo) + 10}" y="${Y(u.r) + 4}" font-size="12" font-weight="600" fill="${accent}">${fmt(u.r)}</text>`;
@@ -674,23 +674,23 @@ function renderMes() {
   $('#mBajo').textContent = bajo;
 
   const orden = filas.slice().sort((a, b) => (b.d.ok ? b.d.v : -1) - (a.d.ok ? a.d.v : -1));
-  $('#tablaMes').innerHTML = `<thead><tr><th>Área</th><th>Unidad</th><th>Meta</th><th>Real</th><th>Diferencia</th><th>Cumplimiento</th></tr></thead><tbody>` +
+  $('#tablaMes').innerHTML = `<thead><tr><th>Área</th><th class="num">Meta</th><th class="num">Real</th><th class="num">Diferencia</th><th>Cumplimiento</th></tr></thead><tbody>` +
     orden.map(({ ind, d, e }) => {
       const dif = d.ok ? d.r - d.m : null;
+      const u = ind.unidad ? ` <span class="unit">${esc(ind.unidad)}</span>` : '';
       return `<tr>
-        <td><button class="link-btn" data-abrir="${ind.id}">${esc(ind.nombre)}</button></td>
-        <td class="muted">${esc(ind.unidad)}</td>
-        <td>${d.m > 0 ? fmt(d.m) : '—'}</td>
-        <td>${!isNaN(d.r) ? fmt(d.r) : '—'}</td>
-        <td class="${dif == null ? '' : dif >= 0 ? 'txt-green' : 'txt-red'}">${dif == null ? '—' : (dif > 0 ? '+' : '') + fmt(dif)}</td>
-        <td>${e ? `<span class="pill ${e.c}">${fmt(d.v * 100, 1)}% · ${e.t}</span>` : '<span class="pill gray">Pendiente</span>'}</td>
+        <td class="area"><button class="link-btn" data-abrir="${ind.id}">${esc(ind.nombre)}</button></td>
+        <td class="num">${d.m > 0 ? fmt(d.m) : '—'}${d.m > 0 ? u : ''}</td>
+        <td class="num">${!isNaN(d.r) ? fmt(d.r) : '—'}${!isNaN(d.r) ? u : ''}</td>
+        <td class="num ${dif == null ? '' : dif >= 0 ? 'txt-green' : 'txt-red'}">${dif == null ? '—' : (dif > 0 ? '+' : '') + fmt(dif)}</td>
+        <td>${e ? `<span class="pill ${e.c}">${fmt(d.v * 100, 1)} % · ${e.t}</span>` : '<span class="pill gray">Sin real aún</span>'}</td>
       </tr>`;
     }).join('') + '</tbody>';
 
   $('#gridMes').innerHTML = filas.map(({ ind, d, e }) => `
     <button class="month res-card" data-abrir="${ind.id}">
       <div class="month-head"><strong>${esc(ind.nombre)}</strong></div>
-      <div class="res-meta">${e ? `<span class="pill ${e.c}">${e.t}</span>` : '<span class="pill gray">Pendiente</span>'}<span>${esc(ind.unidad)}</span></div>
+      <div class="res-meta">${e ? `<span class="pill ${e.c}">${e.t}</span>` : '<span class="pill gray">Sin real aún</span>'}<span>${esc(ind.unidad)}</span></div>
       ${gauge(d.v, ind)}
       <div class="month-foot">
         <span>Meta: ${d.m > 0 ? fmt(d.m) : '—'}</span>

@@ -280,3 +280,32 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 .link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 500; color: var(--text); cursor: pointer; text-align: left; }
 .link-btn:hover { color: var(--accent); text-decoration: underline; }
 #vistaMes label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+#tablaMes td.area { width: auto; min-width: 240px; }
+#tablaMes .link-btn { font-weight: 600; font-size: 14px; line-height: 1.35; }
+#tablaMes td.num, #tablaMes th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 18px; }
+#tablaMes td.num { font-weight: 400; }
+#tablaMes .unit { font-size: 11px; color: var(--muted); margin-left: 3px; }
+#tablaMes td, #tablaMes th { padding-top: 10px; padding-bottom: 10px; }
+
+/* Animaciones de los gráficos */
+@keyframes g-fill   { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes g-needle { from { transform: rotate(var(--r)); } to { transform: rotate(0deg); } }
+@keyframes grow-y   { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes grow-x   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes draw     { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes fade     { from { opacity: 0; } to { opacity: 1; } }
+.g-fill   { stroke-dasharray: 100; animation: g-fill 1s cubic-bezier(.22,.8,.3,1) both; }
+.g-needle { transform-origin: 100px 86px; animation: g-needle 1s cubic-bezier(.22,.8,.3,1) both; }
+.bar      { transform-box: fill-box; transform-origin: bottom; animation: grow-y .7s cubic-bezier(.22,.8,.3,1) both; }
+.draw     { stroke-dasharray: 1; animation: draw 1.3s ease-out both; }
+.fade-in  { animation: fade .6s ease-out both; }
+.rank-bar { transform-origin: left; animation: grow-x .9s cubic-bezier(.22,.8,.3,1) both; }
+.h-cell, .pill { animation: fade .5s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .g-fill, .g-needle, .bar, .draw, .fade-in, .rank-bar, .h-cell, .pill { animation: none; }
+  .draw { stroke-dasharray: none; }
+}
+@media print {
+  .g-fill, .g-needle, .bar, .draw, .fade-in, .rank-bar, .h-cell, .pill { animation: none !important; }
+  .draw { stroke-dasharray: none; }
+}
