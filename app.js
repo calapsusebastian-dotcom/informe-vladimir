@@ -604,8 +604,7 @@ function calcular(ind) {
 }
 
 function renderChips() {
-  const chips = [`<button class="chip ${vistaInforme === 'resumen' ? 'active' : ''}" data-chip="resumen">Resumen general</button>`,
-                 `<button class="chip ${vistaInforme === 'mes' ? 'active' : ''}" data-chip="mes">Por mes</button>`]
+  const chips = [`<button class="chip ${vistaInforme === 'resumen' ? 'active' : ''}" data-chip="resumen">Resumen general</button>`]
     .concat(state.indicadores.map((i) =>
       `<button class="chip ${vistaInforme === 'detalle' && i.id === state.actual ? 'active' : ''}" data-chip="${i.id}">${esc(i.nombre)}</button>`));
   $('#chips').innerHTML = chips.join('');
@@ -615,7 +614,6 @@ $('#chips').addEventListener('click', (e) => {
   const b = e.target.closest('[data-chip]');
   if (!b) return;
   if (b.dataset.chip === 'resumen') vistaInforme = 'resumen';
-  else if (b.dataset.chip === 'mes') vistaInforme = 'mes';
   else { vistaInforme = 'detalle'; state.actual = b.dataset.chip; guardar(); }
   renderInforme();
 });
@@ -640,10 +638,8 @@ function renderInforme() {
   renderEncabezado();
   renderChips();
   $('#vistaResumen').style.display = vistaInforme === 'resumen' ? '' : 'none';
-  $('#vistaMes').style.display = vistaInforme === 'mes' ? '' : 'none';
   $('#vistaDetalle').style.display = vistaInforme === 'detalle' ? '' : 'none';
   if (vistaInforme === 'resumen') renderResumen();
-  else if (vistaInforme === 'mes') renderMes();
   else renderDetalle();
 }
 
@@ -788,8 +784,7 @@ function renderSemaforo(calc) {
   state.actual = b.dataset.abrir;
   vistaInforme = 'detalle';
   guardar();
-  renderInforme();
-  window.scrollTo(0, 0);
+  mostrar('informe');
 }));
 
 
@@ -859,6 +854,7 @@ function mostrar(vista) {
   document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === vista));
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === vista));
   if (vista === 'informe') renderInforme();
+  if (vista === 'porMes') renderMes();
   window.scrollTo(0, 0);
 }
 
