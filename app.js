@@ -915,3 +915,31 @@ $('#cfgQuitarLogo').addEventListener('click', () => { state.config.logo = ''; gu
 renderConfig();
 renderCaptura();
 
+
+/* =========================================================
+   ANIMACIONES AL HACER SCROLL
+   Cada gráfico queda en pausa hasta que entra en pantalla.
+   ========================================================= */
+(function () {
+  const OBJETIVOS = 'svg.gauge, svg.bars, #ranking .rank-row, #semaforo tbody, #tablaMes tbody';
+  if (!('IntersectionObserver' in window)) return; // sin soporte: se animan al dibujarse
+  const io = new IntersectionObserver((entradas) => {
+    entradas.forEach((en) => {
+      if (!en.isIntersecting) return;
+      en.target.classList.remove('esperar');
+      io.unobserve(en.target);
+    });
+  }, { threshold: 0.2 });
+
+  function vigilar(raiz) {
+    raiz.querySelectorAll(OBJETIVOS).forEach((el) => {
+      if (el.dataset.vigilado) return;
+      el.dataset.vigilado = '1';
+      el.classList.add('esperar');
+      io.observe(el);
+    });
+  }
+
+  new MutationObserver(() => vigilar(document.body)).observe(document.querySelector('main'), { childList: true, subtree: true });
+  vigilar(document.body);
+})();

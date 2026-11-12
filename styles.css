@@ -309,3 +309,7 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
   .g-fill, .g-needle, .bar, .draw, .fade-in, .rank-bar, .h-cell, .pill { animation: none !important; }
   .draw { stroke-dasharray: none; }
 }
+
+/* Los gráficos esperan a entrar en pantalla para animarse */
+.esperar .g-fill, .esperar .g-needle, .esperar .bar, .esperar .draw,
+.esperar .fade-in, .esperar .rank-bar, .esperar .h-cell, .esperar .pill { animation-play-state: paused; }
