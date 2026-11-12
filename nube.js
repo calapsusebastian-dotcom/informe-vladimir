@@ -34,6 +34,7 @@ const escribiendo = () => {
 function refrescarVista() {
   renderConfig();
   if ($('#informe').classList.contains('active')) renderInforme();
+  else if ($('#porMes').classList.contains('active')) renderMes();
   else renderCaptura();
 }
 

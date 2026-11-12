@@ -368,6 +368,27 @@ $('#btnEliminar').addEventListener('click', (ev) => confirmar(ev.currentTarget, 
   toast('Indicador eliminado');
 }));
 
+$('#btnNuevoAnio').addEventListener('click', (ev) => {
+  const sig = Number(listaAnios().slice(-1)[0]) + 1;
+  confirmar(ev.currentTarget, `¿Crear ${sig} con todas las áreas? Clic otra vez`, () => {
+    const base = state.indicadores.filter((i) => Number(i.anio) === sig - 1);
+    let creados = 0;
+    base.forEach((b) => {
+      if (state.indicadores.some((i) => i.nombre === b.nombre && Number(i.anio) === sig)) return;
+      const n = nuevoIndicador(b.nombre);
+      Object.assign(n, { anio: sig, unidad: b.unidad, lo: b.lo, hi: b.hi,
+        meses: b.meses.map((x) => ({ meta: x.meta, real: '', ant: '' })) });
+      state.indicadores.push(n);
+      if (!creados) state.actual = n.id;
+      creados++;
+    });
+    anioSel = String(sig);
+    guardar();
+    renderCaptura();
+    toast(creados ? `Año ${sig} creado con ${creados} áreas. Las metas se copiaron; ajústalas y llena el real.` : `El año ${sig} ya existe.`);
+  });
+});
+
 /* Pegar desde Excel */
 $('#btnAplicar').addEventListener('click', () => {
   const err = $('#errPegar');
@@ -585,10 +606,39 @@ $('#fileExcel').addEventListener('change', (e) => {
 
 let vistaInforme = 'resumen';
 
+/* ---------- Año seleccionado (informe y Por mes) ---------- */
+let anioSel = null;
+const listaAnios = () => [...new Set(state.indicadores.map((i) => String(i.anio)))].sort();
+function anioActivo() {
+  const a = listaAnios();
+  if (!a.includes(String(anioSel))) anioSel = a[a.length - 1];
+  return anioSel;
+}
+const delAnio = () => state.indicadores.filter((i) => String(i.anio) === String(anioActivo()));
+
+function renderAnioSelect() {
+  const s = $('#selAnio');
+  s.innerHTML = listaAnios().map((a) => `<option value="${a}">${a}</option>`).join('');
+  s.value = anioActivo();
+  const lista = delAnio();
+  if (!lista.some((i) => i.id === state.actual)) state.actual = lista[0].id;
+}
+
+$('#selAnio').addEventListener('change', (e) => {
+  anioSel = e.target.value;
+  mesSel = null;
+  const lista = delAnio();
+  if (!lista.some((i) => i.id === state.actual)) state.actual = lista[0].id;
+  if ($('#porMes').classList.contains('active')) renderMes(); else renderInforme();
+});
+
 function calcular(ind) {
+  const prev = state.indicadores.find((p) => p.nombre === ind.nombre && Number(p.anio) === Number(ind.anio) - 1);
   let tm = 0, tr = 0, enMeta = 0, conDato = 0, metaAnual = 0;
-  const datos = ind.meses.map((x) => {
-    const m = num(x.meta), r = num(x.real), a = num(x.ant);
+  const datos = ind.meses.map((x, i) => {
+    const m = num(x.meta), r = num(x.real);
+    let a = num(x.ant);
+    if (isNaN(a) && prev) a = num(prev.meses[i].real);
     if (m > 0) metaAnual += m;
     const ok = m > 0 && r >= 0;
     if (ok) {
@@ -605,7 +655,7 @@ function calcular(ind) {
 
 function renderChips() {
   const chips = [`<button class="chip ${vistaInforme === 'resumen' ? 'active' : ''}" data-chip="resumen">Resumen general</button>`]
-    .concat(state.indicadores.map((i) =>
+    .concat(delAnio().map((i) =>
       `<button class="chip ${vistaInforme === 'detalle' && i.id === state.actual ? 'active' : ''}" data-chip="${i.id}">${esc(i.nombre)}</button>`));
   $('#chips').innerHTML = chips.join('');
 }
@@ -620,7 +670,7 @@ $('#chips').addEventListener('click', (e) => {
 
 function corteAuto() {
   let ultimo = -1, anio = '';
-  state.indicadores.forEach((ind) => ind.meses.forEach((x, i) => {
+  delAnio().forEach((ind) => ind.meses.forEach((x, i) => {
     if (x.real !== '' && !isNaN(num(x.real)) && num(x.meta) > 0 && i > ultimo) { ultimo = i; anio = ind.anio; }
   }));
   return ultimo >= 0 ? `${MESES[ultimo]} ${anio}` : '';
@@ -635,6 +685,7 @@ function renderEncabezado() {
 }
 
 function renderInforme() {
+  renderAnioSelect();
   renderEncabezado();
   renderChips();
   $('#vistaResumen').style.display = vistaInforme === 'resumen' ? '' : 'none';
@@ -648,22 +699,23 @@ let mesSel = null;
 
 function ultimoMesConDato() {
   let u = -1;
-  state.indicadores.forEach((ind) => ind.meses.forEach((x, i) => {
+  delAnio().forEach((ind) => ind.meses.forEach((x, i) => {
     if (x.real !== '' && !isNaN(num(x.real)) && num(x.meta) > 0 && i > u) u = i;
   }));
   return u >= 0 ? u : 0;
 }
 
 function renderMes() {
+  renderAnioSelect();
   if (mesSel == null) mesSel = ultimoMesConDato();
   $('#selMes').innerHTML = MESES.map((m, i) => `<option value="${i}">${m}</option>`).join('');
   $('#selMes').value = mesSel;
 
-  const anios = [...new Set(state.indicadores.map((i) => i.anio))].join(', ');
+  const anios = anioActivo();
   $('#mesSub').textContent = `${MESES[mesSel]} ${anios} · Meta vs. real de cada área`;
 
   let enMeta = 0, enRiesgo = 0, bajo = 0;
-  const filas = state.indicadores.map((ind) => {
+  const filas = delAnio().map((ind) => {
     const d = calcular(ind).datos[mesSel];
     const e = d.ok ? estado(d.v, ind) : null;
     if (e) { if (e.c === 'green') enMeta++; else if (e.c === 'amber') enRiesgo++; else bajo++; }
@@ -702,10 +754,10 @@ function renderMes() {
 $('#selMes').addEventListener('change', (e) => { mesSel = +e.target.value; renderMes(); });
 
 function renderResumen() {
-  const anios = [...new Set(state.indicadores.map((i) => i.anio))].join(', ');
+  const anios = anioActivo();
   $('#resSub').textContent = `Año ${anios} · Cumplimiento acumulado a la fecha de cada sección`;
   let enMeta = 0, enRiesgo = 0, bajo = 0;
-  const calc = state.indicadores.map((ind) => ({ ind, c: calcular(ind) }));
+  const calc = delAnio().map((ind) => ({ ind, c: calcular(ind) }));
   renderRanking(calc);
   renderSemaforo(calc);
   $('#resGrid').innerHTML = calc.map(({ ind, c }) => {
@@ -757,7 +809,7 @@ function renderRanking(calc) {
         <span class="rank-pos">—</span><span class="rank-name">${esc(ind.nombre)}</span>
         <span class="rank-track"></span><span class="rank-val muted">Sin datos</span><span class="rank-var"></span>
       </button>`).join('');
-  const anios = [...new Set(state.indicadores.map((i) => i.anio - 1))].join(', ');
+  const anios = Number(anioActivo()) - 1;
   $('#rankHead').innerHTML = `<span></span><span>Sección</span>
     <span class="rank-track rank-axis"><span class="rank-meta-lbl" style="left:${metaPos}%">Meta 100%</span></span>
     <span class="rank-val">A la fecha</span><span class="rank-var">vs. ${anios}</span>`;
@@ -855,6 +907,7 @@ function mostrar(vista) {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === vista));
   if (vista === 'informe') renderInforme();
   if (vista === 'porMes') renderMes();
+  $('#anioBox').style.display = vista === 'captura' ? 'none' : '';
   window.scrollTo(0, 0);
 }
 
