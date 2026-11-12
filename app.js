@@ -895,10 +895,18 @@ function renderRanking(calc) {
     return `
       <button class="rank-row" style="--mp:${metaPos}%" data-abrir="${ind.id}">
         <span class="rank-pos ${k < 3 ? 'p' + (k + 1) : ''}">${k + 1}</span>
-        <span class="rank-name">${esc(ind.nombre)}${ind.unidad ? `<small>${esc(ind.unidad)}</small>` : ''}</span>
-        <span class="rank-track">
-          <span class="rank-bar" style="width:${(c.total / escala * 100).toFixed(2)}%;background:${COL[e.c]}"></span>
-          <span class="rank-meta" style="left:${metaPos}%"></span>
+        <span class="rank-name">${esc(ind.nombre)}</span>
+        <span class="rank-mid">
+          <span class="rank-track">
+            <span class="rank-bar" style="width:${(c.total / escala * 100).toFixed(2)}%;background:${COL[e.c]}"></span>
+            <span class="rank-meta" style="left:${metaPos}%"></span>
+          </span>
+          <span class="rank-nums">
+            <span>Real <b>${fmt(c.tr)}</b></span>
+            <span>Meta <b>${fmt(c.tm)}</b></span>
+            <span class="${c.tr - c.tm >= 0 ? 'txt-green' : 'txt-red'}"><b>${c.tr - c.tm > 0 ? '+' : ''}${fmt(c.tr - c.tm)}</b></span>
+            ${ind.unidad ? `<span class="u">${esc(ind.unidad)}</span>` : ''}
+          </span>
         </span>
         <span class="rank-val"><strong>${fmt(c.total * 100, 1)}%</strong><small class="st ${e.c}">${e.t}</small></span>
         <span class="rank-var">${c.vari == null ? '<span class="muted">—</span>' : `<span class="vchip ${c.vari >= 0 ? 'up' : 'down'}">${c.vari >= 0 ? '▲' : '▼'} ${fmtVar(c.vari)}</span>`}</span>
