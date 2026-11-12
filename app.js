@@ -243,9 +243,9 @@ function acumulado(datos, ind) {
   const paso = pasoBonito(max / 4), tope = Math.ceil(max / paso) * paso;
   const alto = H - pt - pb, cw = (W - pl - pr) / 11;
   const X = (i) => pl + cw * i, Y = (v) => pt + alto * (1 - v / tope);
-  const accent = state.config.color || '#1f5fbf';
+  const accent = '#f26b1d'; // naranja cálido del acumulado
 
-  let s = `<svg viewBox="0 0 ${W} ${H}" class="bars" role="img" aria-label="Acumulado real vs. meta">`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="bars" role="img" aria-label="Acumulado real vs. meta"><defs><linearGradient id="gradAcum" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${accent}" stop-opacity="0.38"/><stop offset="1" stop-color="${accent}" stop-opacity="0.03"/></linearGradient></defs>`;
   for (let t = 0; t <= tope + paso / 1000; t += paso) {
     s += `<line x1="${pl}" x2="${W - pr}" y1="${Y(t)}" y2="${Y(t)}" stroke="#eceef2"/>`;
     s += `<text x="${pl - 8}" y="${Y(t) + 4}" text-anchor="end" font-size="12" fill="#6b7280">${fmt(t)}</text>`;
@@ -259,10 +259,10 @@ function acumulado(datos, ind) {
 
   if (ultimo >= 0) {
     const ptsR = serie.slice(0, ultimo + 1).map((x, i) => X(i) + ',' + Y(x.r));
-    s += `<polygon points="${X(0)},${Y(0)} ${ptsR.join(' ')} ${X(ultimo)},${Y(0)}" fill="${accent}" opacity="0.08" class="fade-in" style="animation-delay:900ms"/>`;
+    s += `<polygon points="${X(0)},${Y(0)} ${ptsR.join(' ')} ${X(ultimo)},${Y(0)}" fill="url(#gradAcum)" class="fade-in" style="animation-delay:900ms"/>`;
     s += linea(serie.map((x) => x.r), accent, 'stroke-width="3" stroke-linejoin="round"');
     serie.slice(0, ultimo + 1).forEach((x, i) => {
-      s += `<circle cx="${X(i)}" cy="${Y(x.r)}" r="3.5" fill="${accent}" class="fade-in" style="animation-delay:${400 + i * 80}ms"><title>${MESES[i]} · Real acumulado ${fmt(x.r)} · Meta acumulada ${fmt(x.m)}</title></circle>`;
+      s += `<circle cx="${X(i)}" cy="${Y(x.r)}" r="4" fill="${accent}" stroke="#fff" stroke-width="1.5" class="fade-in" style="animation-delay:${400 + i * 80}ms"><title>${MESES[i]} · Real acumulado ${fmt(x.r)} · Meta acumulada ${fmt(x.m)}</title></circle>`;
       if (i !== ultimo) s += `<text class="dato" x="${X(i)}" y="${Y(x.r) - 10}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${accent}" style="animation-delay:${700 + i * 80}ms">${fmt(x.r)}</text>`;
     });
     const u = serie[ultimo], brecha = u.r - u.m;
