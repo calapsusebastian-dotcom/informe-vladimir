@@ -318,3 +318,60 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 .anio-box { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .anio-box select { min-width: 0; width: auto; padding: 6px 10px; }
 @media print { .anio-box { display: none; } }
+
+/* =========================================================
+   Mejora visual: barra superior, selector de año y chips
+   ========================================================= */
+.topbar { box-shadow: 0 1px 0 var(--border), 0 4px 14px rgba(20, 30, 50, .04); padding: 12px 28px; }
+.brand h1 { font-size: 19px; font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
+.brand h1::before { content: ''; width: 4px; height: 20px; border-radius: 2px; background: var(--accent); }
+.brand p { margin-left: 14px; }
+.top-right { gap: 12px; }
+
+/* Estado de la nube como etiqueta */
+.nube-box { padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); }
+
+/* Año en una sola línea, con el mismo estilo de las pestañas */
+.anio-box {
+  flex-direction: row; align-items: center; gap: 8px;
+  padding: 4px 6px 4px 14px; border-radius: 12px;
+  background: var(--bg); color: var(--muted); font-size: 13px; font-weight: 500;
+}
+.anio-box select {
+  min-width: 0; width: auto; border: 0; border-radius: 8px;
+  background-color: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  font-weight: 600; font-size: 14px; color: var(--text); padding: 7px 10px; cursor: pointer;
+}
+
+.tabs { border-radius: 12px; }
+.tab { transition: color .15s, background .15s; }
+.tab.active { color: var(--accent); }
+
+/* Encabezado del informe */
+.report-head { position: relative; border-bottom: 1px solid var(--border); padding: 6px 2px 18px; margin-bottom: 18px; }
+.report-head::after { content: ''; position: absolute; left: 0; bottom: -1px; width: 72px; height: 3px; border-radius: 3px; background: var(--accent); }
+.rep-empresa { font-size: 26px; font-weight: 700; letter-spacing: -.015em; line-height: 1.2; }
+.rep-corte { margin-top: 4px; font-size: 13.5px; }
+
+/* Chips de secciones: una sola fila con desplazamiento lateral */
+.chips {
+  flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 2px 2px 10px; margin-bottom: 10px;
+  scrollbar-width: thin; scrollbar-color: #c9ced6 transparent;
+}
+.chips::-webkit-scrollbar { height: 6px; }
+.chips::-webkit-scrollbar-thumb { background: #c9ced6; border-radius: 6px; }
+.chip {
+  flex: none; white-space: nowrap; padding: 7px 15px; font-weight: 500;
+  box-shadow: 0 1px 2px rgba(20, 30, 50, .05);
+  transition: color .15s, border-color .15s, box-shadow .15s, transform .15s;
+}
+.chip:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(20, 30, 50, .08); }
+.chip.active { box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent); font-weight: 600; }
+.chip[data-chip="resumen"] { margin-right: 6px; position: relative; }
+.chip[data-chip="resumen"]::after { content: ''; position: absolute; right: -9px; top: 22%; bottom: 22%; width: 1px; background: var(--border); }
+
+@media (max-width: 760px) {
+  .topbar { padding: 12px 16px; }
+  .anio-box, .nube-box { order: 2; }
+  .rep-empresa { font-size: 21px; }
+}
