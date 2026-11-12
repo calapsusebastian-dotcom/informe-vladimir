@@ -713,6 +713,13 @@ function renderMes() {
 
   const anios = anioActivo();
   $('#mesSub').textContent = `${MESES[mesSel]} ${anios} · Meta vs. real de cada área`;
+  const cfg = state.config;
+  $('#pmLogo').innerHTML = cfg.logo ? `<img src="${cfg.logo}" alt="">` : '';
+  $('#pmEmpresa').textContent = cfg.empresa || 'Informe de cumplimiento de metas';
+  $('#pmTitulo').textContent = `Cumplimiento de ${MESES[mesSel]} ${anios} · todas las áreas`;
+  const hoy = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  $('#pmFecha').textContent = `Generado el ${hoy}`;
+  $('#pmPie').textContent = `${cfg.empresa ? cfg.empresa + ' · ' : ''}Tablero de cumplimiento · ${MESES[mesSel]} ${anios}`;
 
   let enMeta = 0, enRiesgo = 0, bajo = 0;
   const filas = delAnio().map((ind) => {
@@ -750,6 +757,15 @@ function renderMes() {
       </div>
     </button>`).join('');
 }
+
+$('#btnPdfMes').addEventListener('click', () => {
+  const titulo = document.title;
+  document.title = `Informe ${MESES[mesSel]} ${anioActivo()}${state.config.empresa ? ' - ' + state.config.empresa : ''}`; // nombre sugerido del PDF
+  const restaurar = () => { document.title = titulo; window.removeEventListener('afterprint', restaurar); };
+  window.addEventListener('afterprint', restaurar);
+  try { window.print(); } catch (e) { restaurar(); }
+  toast('En la ventana de impresión elige "Guardar como PDF" como destino.');
+});
 
 $('#selMes').addEventListener('change', (e) => { mesSel = +e.target.value; renderMes(); });
 

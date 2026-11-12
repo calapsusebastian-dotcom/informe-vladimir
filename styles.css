@@ -264,7 +264,7 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
 /* ---------- Impresión: solo el informe ---------- */
 @media print {
   .topbar, .no-print, #captura, .toast { display: none !important; }
-  #informe { display: block !important; }
+  .view:not(.active) { display: none !important; }
   body { background: #fff; }
   main { padding: 0; max-width: none; }
   .card { border: none; padding: 8px 0; }
@@ -374,4 +374,40 @@ body.auth-pending main, body.auth-pending .tabs { display: none; }
   .topbar { padding: 12px 16px; }
   .anio-box, .nube-box { order: 2; }
   .rep-empresa { font-size: 21px; }
+}
+
+/* =========================================================
+   PDF de "Por mes"
+   ========================================================= */
+.print-only { display: none; }
+.pm-controles { align-items: flex-end; gap: 12px; }
+.pm-titulo { margin: 2px 0 0; font-size: 16px; font-weight: 600; color: var(--accent); }
+
+@page { size: A4; margin: 12mm; }
+@media print {
+  .print-only { display: block; }
+  .pm-head { display: flex; align-items: center; gap: 16px; position: relative; padding: 0 0 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .pm-head::after { content: ''; position: absolute; left: 0; bottom: -1px; width: 90px; height: 3px; background: var(--accent); border-radius: 3px; }
+  #porMes, #porMes * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #porMes .card { padding: 6px 0; margin-bottom: 10px; }
+  #porMes .report-title { font-size: 18px; }
+  #porMes .kpis { gap: 10px; }
+  #porMes .kpi { border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; background: #fafbfc; }
+
+  #tablaMes { font-size: 11.5px; }
+  #tablaMes thead th { background: #f1f4f9; color: #374151; border-bottom: 1.5px solid var(--accent); padding: 7px 8px; }
+  #tablaMes tbody tr:nth-child(even) { background: #f8f9fb; }
+  #tablaMes td { padding: 7px 8px; }
+  #tablaMes td.area { min-width: 0; }
+  #tablaMes .link-btn { color: var(--text); text-decoration: none; font-size: 11.5px; }
+  #tablaMes td.num, #tablaMes th.num { padding-right: 12px; }
+  #tablaMes tr { break-inside: avoid; }
+
+  #porMes .card:last-of-type { break-before: page; }
+  #porMes .card:last-of-type .hint { display: none; }
+  #gridMes { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  #gridMes .month { padding: 8px 10px; break-inside: avoid; }
+  #gridMes .res-card { border: 1px solid var(--border); }
+
+  .pm-pie { margin-top: 14px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 10.5px; color: var(--muted); text-align: center; }
 }
